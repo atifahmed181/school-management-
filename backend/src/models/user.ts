@@ -1,7 +1,8 @@
 import {
-    Table, Column, Model, DataType, ForeignKey, BelongsTo, CreatedAt, UpdatedAt, PrimaryKey, AutoIncrement
+    Table, Column, Model, DataType, ForeignKey, BelongsTo, CreatedAt, UpdatedAt, PrimaryKey, AutoIncrement, HasMany
   } from 'sequelize-typescript';
   import { Role } from './role';
+  import { UserPermission } from './userPermission';
   
   @Table({ tableName: 'users' })
   export class User extends Model<User> {
@@ -25,6 +26,9 @@ import {
   
     @BelongsTo(() => Role)
     role!: Role;
+
+    @HasMany(() => UserPermission)
+    userPermissions!: UserPermission[];
   
     @CreatedAt createdAt!: Date;
     @UpdatedAt updatedAt!: Date;
