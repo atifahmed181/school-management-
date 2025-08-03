@@ -1,24 +1,25 @@
 {
     "name": "school-mgmt-frontend",
     "scripts": {
-      "dev": "next dev",
-      "build": "next build",
-      "start": "next start"
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start"
     },
     "dependencies": {
-      "axios": "^0.24.x",
-      "clsx": "^1.x",
-      "next": "^12.x",
-      "react": "^17.x",
-      "react-dom": "^17.x",
-      "tailwindcss": "^2.x"
+        "axios": "^0.24.x",
+        "clsx": "^1.x",
+        "next": "^12.x",
+        "react": "^17.x",
+        "react-dom": "^17.x",
+        "recharts": "^2.8.0",
+        "tailwindcss": "^2.x"
     },
     "devDependencies": {
-      "@types/node": "^16.x",
-      "@types/react": "^17.x",
-      "@types/react-dom": "^17.x",
-      "autoprefixer": "^10.x",
-      "postcss": "^8.x",
-      "typescript": "^4.x"
+        "@types/node": "^16.x",
+        "@types/react": "^17.x",
+        "@types/react-dom": "^17.x",
+        "autoprefixer": "^10.x",
+        "postcss": "^8.x",
+        "typescript": "^4.x"
     }
-  }
+}
