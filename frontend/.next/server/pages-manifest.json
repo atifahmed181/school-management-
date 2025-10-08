@@ -2,5 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/admin/dashboard": "pages/admin/dashboard.js"
+  "/admin/classes": "pages/admin/classes.js",
+  "/dashboard": "pages/dashboard.js",
+  "/accounts": "pages/accounts.js",
+  "/library": "pages/library.js",
+  "/admin/exams": "pages/admin/exams.js",
+  "/admin/reports": "pages/admin/reports.js"
 }

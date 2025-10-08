@@ -52,11 +52,35 @@ export const classAPI = {
 
 // Attendance API
 export const attendanceAPI = {
-  getAll: () => api.get('/attendance'),
-  getByStudent: (studentId: number) => api.get(`/attendance/student/${studentId}`),
-  getByClass: (classId: number) => api.get(`/attendance/class/${classId}`),
-  create: (data: any) => api.post('/attendance', data),
+  // Mark attendance
+  markStudentAttendance: (data: any) => api.post('/attendance/students', data),
+  markStaffAttendance: (data: any) => api.post('/attendance/staff', data),
+  
+  // Get attendance
+  getClassAttendance: (classId: number, date: string) => 
+    api.get(`/attendance/class/${classId}/${date}`),
+  getAttendanceByDateRange: (params: any) => 
+    api.get('/attendance/range', { params }),
+  getAttendanceStats: (params: any) => 
+    api.get('/attendance/stats', { params }),
+  getTodayAttendance: () => api.get('/attendance/today'),
+  getDashboard: () => api.get('/attendance/dashboard'),
+  
+  // Student & Staff history
+  getStudentHistory: (studentId: number, params?: any) => 
+    api.get(`/attendance/student/${studentId}/history`, { params }),
+  getStaffHistory: (staffId: number, params?: any) => 
+    api.get(`/attendance/staff/${staffId}/history`, { params }),
+  
+  // Get with status
+  getStudentsWithStatus: (classId: number, date: string) => 
+    api.get('/attendance/students-status', { params: { classId, date } }),
+  getStaffWithStatus: (date: string) => 
+    api.get('/attendance/staff-status', { params: { date } }),
+  
+  // Update & Delete
   update: (id: number, data: any) => api.put(`/attendance/${id}`, data),
+  delete: (id: number) => api.delete(`/attendance/${id}`),
 };
 
 // Subject API

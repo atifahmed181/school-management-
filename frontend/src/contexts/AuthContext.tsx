@@ -19,7 +19,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) setUser({ role: JSON.parse(atob(token.split('.')[1])).role });
+    if (token) {
+      try {
+        const payload = token.split('.')[1];
+        if (payload) {
+          const decodedPayload = atob(payload);
+          const parsedPayload = JSON.parse(decodedPayload);
+          if (parsedPayload?.role) {
+            setUser({ role: parsedPayload.role });
+          } else {
+            // Invalid token format - missing role
+            localStorage.removeItem('token');
+          }
+        } else {
+          // Invalid token format - not a JWT
+          localStorage.removeItem('token');
+        }
+      } catch (error) {
+        // Error parsing token
+        console.error('Error parsing auth token:', error);
+        localStorage.removeItem('token');
+      }
+    }
   }, []);
 
   const login = async ({ email, password }: { email: string; password: string }) => {

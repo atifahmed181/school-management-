@@ -1,74 +1,125 @@
 import React, { useState, useEffect } from 'react';
-import { reportAPI, classAPI, studentAPI } from '../../services/api';
-import { 
-  StudentReport, 
-  AttendanceReport, 
-  AcademicReport, 
-  FinancialReport,
-  Class,
-  Student 
-} from '../../types';
-import Button from '../../components/ui/Button';
-import Table from '../../components/ui/Table';
-import Select from '../../components/ui/Select';
-import Input from '../../components/ui/Input';
+import { FaChartBar, FaDownload, FaCalendarAlt, FaUserGraduate, FaChalkboardTeacher, FaMoneyBillWave, FaUsers, FaSearch } from 'react-icons/fa';
+import { reportAPI, classAPI, studentAPI, staffAPI } from '../../services/api';
+import { useNotification } from '../../hooks/useNotification';
+
+interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  classId: string;
+  studentId: string;
+  staffId: string;
+  department: string;
+  reportType: string;
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
+}
+
+interface ReportData {
+  summary: any;
+  records: any[];
+  charts: any;
+}
 
 const ReportsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('students');
+  const [activeTab, setActiveTab] = useState<'accounts' | 'attendance'>('accounts');
+  const [activeSubTab, setActiveSubTab] = useState<string>('overview');
   const [loading, setLoading] = useState(false);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [reportData, setReportData] = useState<any>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
+  const { showNotification } = useNotification();
 
-  // Filter states
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<ReportFilters>({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
     classId: '',
     studentId: '',
-    startDate: '',
-    endDate: '',
+    staffId: '',
+    department: '',
+    reportType: 'overview',
+    period: 'monthly'
   });
 
   useEffect(() => {
-    fetchFilterData();
+    loadFilterData();
   }, []);
 
-  const fetchFilterData = async () => {
+  const loadFilterData = async () => {
     try {
-      const [classesRes, studentsRes] = await Promise.all([
+      const [classesRes, studentsRes, staffRes] = await Promise.all([
         classAPI.getAll(),
         studentAPI.getAll(),
+        staffAPI.getAll()
       ]);
-      setClasses(classesRes.data);
-      setStudents(studentsRes.data);
+      setClasses(classesRes.data.classes || []);
+      setStudents(studentsRes.data.students || []);
+      setStaff(staffRes.data.staff || []);
     } catch (error) {
-      console.error('Error fetching filter data:', error);
+      console.error('Error loading filter data:', error);
     }
   };
 
   const generateReport = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       let response;
+      const params = {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        classId: filters.classId || undefined,
+        studentId: filters.studentId || undefined,
+        staffId: filters.staffId || undefined,
+        department: filters.department || undefined,
+        period: filters.period
+      };
 
-      switch (activeTab) {
-        case 'students':
-          response = await reportAPI.getStudents(filters);
-          break;
-        case 'attendance':
-          response = await reportAPI.getAttendance(filters);
-          break;
-        case 'academic':
-          response = await reportAPI.getAcademic(filters);
-          break;
-        case 'financial':
-          response = await reportAPI.getFinancial(filters);
-          break;
-        default:
-          return;
+      if (activeTab === 'accounts') {
+        switch (activeSubTab) {
+          case 'overview':
+            response = await reportAPI.getFinancial(params);
+            break;
+          case 'fee-collection':
+            response = await reportAPI.getFinancial(params);
+            break;
+          case 'expenses':
+            response = await reportAPI.getFinancial(params);
+            break;
+          case 'profit-loss':
+            response = await reportAPI.getFinancial(params);
+            break;
+          default:
+            response = await reportAPI.getFinancial(params);
+        }
+      } else if (activeTab === 'attendance') {
+        switch (activeSubTab) {
+          case 'student-overview':
+            response = await reportAPI.getAttendance(params);
+            break;
+          case 'student-wise':
+            response = await reportAPI.getAttendance({ ...params, studentId: filters.studentId });
+            break;
+          case 'class-wise':
+            response = await reportAPI.getAttendance({ ...params, classId: filters.classId });
+            break;
+          case 'employee-overview':
+            response = await reportAPI.getAttendance(params);
+            break;
+          case 'employee-wise':
+            response = await reportAPI.getAttendance({ ...params, staffId: filters.staffId });
+            break;
+          case 'department-wise':
+            response = await reportAPI.getAttendance({ ...params, department: filters.department });
+            break;
+          default:
+            response = await reportAPI.getAttendance(params);
+        }
       }
 
       setReportData(response.data);
-    } catch (error) {
+      showNotification('Report generated successfully', 'success');
+    } catch (error: any) {
+      showNotification('Failed to generate report', 'error');
       console.error('Error generating report:', error);
     } finally {
       setLoading(false);
@@ -76,341 +127,572 @@ const ReportsPage: React.FC = () => {
   };
 
   const exportReport = () => {
-    // Implementation for exporting report to PDF/Excel
-    console.log('Exporting report...');
+    if (!reportData) {
+      showNotification('No data to export', 'warning');
+      return;
+    }
+
+    const headers = ['Date', 'Description', 'Amount', 'Type', 'Status'];
+    const rows = reportData.records.map(record => [
+      record.date || record.paymentDate || '-',
+      record.description || record.feeType || record.studentName || '-',
+      record.amount || '-',
+      record.type || record.status || '-',
+      record.status || '-'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeTab}-${activeSubTab}-report-${Date.now()}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showNotification('Report exported successfully', 'success');
   };
 
-  const tabs = [
-    { id: 'students', label: 'Student Reports', icon: '👨‍🎓' },
-    { id: 'attendance', label: 'Attendance Reports', icon: '📝' },
-    { id: 'academic', label: 'Academic Reports', icon: '📚' },
-    { id: 'financial', label: 'Financial Reports', icon: '💰' },
+  const accountsTabs = [
+    { id: 'overview', label: 'Financial Overview', icon: <FaChartBar /> },
+    { id: 'fee-collection', label: 'Fee Collection', icon: <FaMoneyBillWave /> },
+    { id: 'expenses', label: 'Expenses', icon: <FaMoneyBillWave /> },
+    { id: 'profit-loss', label: 'Profit & Loss', icon: <FaChartBar /> }
   ];
 
-  const renderStudentReport = () => {
-    if (!reportData) return null;
+  const attendanceTabs = [
+    { id: 'student-overview', label: 'Student Overview', icon: <FaUserGraduate /> },
+    { id: 'student-wise', label: 'Student-wise', icon: <FaUserGraduate /> },
+    { id: 'class-wise', label: 'Class & Section-wise', icon: <FaUsers /> },
+    { id: 'employee-overview', label: 'Employee Overview', icon: <FaChalkboardTeacher /> },
+    { id: 'employee-wise', label: 'Individual Employee', icon: <FaChalkboardTeacher /> },
+    { id: 'department-wise', label: 'Department-wise', icon: <FaUsers /> }
+  ];
 
-    const columns = [
-      { key: 'student.firstName', header: 'First Name' },
-      { key: 'student.lastName', header: 'Last Name' },
-      { key: 'student.studentId', header: 'Student ID' },
-      { key: 'student.currentClass', header: 'Class' },
-      { 
-        key: 'attendance.percentage', 
-        header: 'Attendance %',
-        render: (item: StudentReport) => (
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            item.attendance.percentage >= 90 ? 'bg-green-100 text-green-800' :
-            item.attendance.percentage >= 75 ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
-            {item.attendance.percentage}%
-          </span>
-        )
-      },
-      { 
-        key: 'academic.averageGrade', 
-        header: 'Average Grade',
-        render: (item: StudentReport) => (
-          <span className="font-medium">{item.academic.averageGrade.toFixed(2)}</span>
-        )
-      },
-      { 
-        key: 'financial.outstanding', 
-        header: 'Outstanding Fees',
-        render: (item: StudentReport) => (
-          <span className={`font-medium ${
-            item.financial.outstanding > 0 ? 'text-red-600' : 'text-green-600'
-          }`}>
-            ${item.financial.outstanding}
-          </span>
-        )
-      },
-    ];
+  const renderReportContent = () => {
+    if (!reportData) {
+      return (
+        <div className="text-center py-12">
+          <FaChartBar size={64} className="text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">Select filters and generate a report to view data</p>
+        </div>
+      );
+    }
 
+    if (activeTab === 'accounts') {
+      return renderAccountsReport();
+    } else {
+      return renderAttendanceReport();
+    }
+  };
+
+  const renderAccountsReport = () => {
+    const summary = reportData?.summary || {};
+    
     return (
-      <Table
-        data={reportData}
-        columns={columns}
-        loading={loading}
-        emptyMessage="No student data found"
-      />
+      <div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="stat-card bg-primary">
+            <div className="stat-icon">💰</div>
+            <div className="stat-details">
+              <div className="stat-value">${summary.totalCollection || 0}</div>
+              <div className="stat-label">Total Collection</div>
+            </div>
+          </div>
+          <div className="stat-card bg-success">
+            <div className="stat-icon">✅</div>
+            <div className="stat-details">
+              <div className="stat-value">${summary.completedPayments || 0}</div>
+              <div className="stat-label">Completed Payments</div>
+            </div>
+          </div>
+          <div className="stat-card bg-warning">
+            <div className="stat-icon">⏳</div>
+            <div className="stat-details">
+              <div className="stat-value">${summary.pendingPayments || 0}</div>
+              <div className="stat-label">Pending Payments</div>
+            </div>
+          </div>
+          <div className="stat-card bg-info">
+            <div className="stat-icon">📊</div>
+            <div className="stat-details">
+              <div className="stat-value">{summary.totalPayments || 0}</div>
+              <div className="stat-label">Total Transactions</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Table */}
+        <div className="card">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Student</th>
+                    <th>Fee Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment Method</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(reportData?.records || []).map((record, index) => (
+                    <tr key={index}>
+                      <td>{new Date(record.paymentDate || record.date).toLocaleDateString()}</td>
+                      <td>{record.student ? `${record.student.firstName} ${record.student.lastName}` : '-'}</td>
+                      <td>{record.fee?.feeType || record.feeType || '-'}</td>
+                      <td className="fw-bold">${record.amount}</td>
+                      <td>
+                        <span className={`badge ${
+                          record.status === 'completed' ? 'bg-success' : 
+                          record.status === 'pending' ? 'bg-warning' : 'bg-danger'
+                        }`}>
+                          {record.status}
+                        </span>
+                      </td>
+                      <td>{record.paymentMethod || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   };
 
   const renderAttendanceReport = () => {
-    if (!reportData) return null;
-
-    const columns = [
-      { key: 'date', header: 'Date' },
-      { key: 'summary.totalDays', header: 'Total Days' },
-      { key: 'summary.presentDays', header: 'Present' },
-      { key: 'summary.absentDays', header: 'Absent' },
-      { 
-        key: 'summary.attendanceRate', 
-        header: 'Attendance Rate',
-        render: (item: AttendanceReport) => (
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            item.summary.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
-            item.summary.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
-            {item.summary.attendanceRate}%
-          </span>
-        )
-      },
-    ];
-
+    const summary = reportData?.summary || {};
+    
     return (
       <div>
-        <div className="mb-6 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Attendance Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{reportData.summary?.totalDays || 0}</p>
-              <p className="text-sm text-gray-600">Total Days</p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="stat-card bg-primary">
+            <div className="stat-icon">📅</div>
+            <div className="stat-details">
+              <div className="stat-value">{summary.totalRecords || 0}</div>
+              <div className="stat-label">Total Records</div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{reportData.summary?.presentDays || 0}</p>
-              <p className="text-sm text-gray-600">Present Days</p>
+          </div>
+          <div className="stat-card bg-success">
+            <div className="stat-icon">✅</div>
+            <div className="stat-details">
+              <div className="stat-value">{summary.presentRecords || 0}</div>
+              <div className="stat-label">Present</div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-600">{reportData.summary?.absentDays || 0}</p>
-              <p className="text-sm text-gray-600">Absent Days</p>
+          </div>
+          <div className="stat-card bg-danger">
+            <div className="stat-icon">❌</div>
+            <div className="stat-details">
+              <div className="stat-value">{summary.absentRecords || 0}</div>
+              <div className="stat-label">Absent</div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">{reportData.summary?.attendanceRate || 0}%</p>
-              <p className="text-sm text-gray-600">Attendance Rate</p>
+          </div>
+          <div className="stat-card bg-warning">
+            <div className="stat-icon">📊</div>
+            <div className="stat-details">
+              <div className="stat-value">{summary.attendanceRate || 0}%</div>
+              <div className="stat-label">Attendance Rate</div>
             </div>
           </div>
         </div>
 
-        <Table
-          data={reportData.details || []}
-          columns={columns}
-          loading={loading}
-          emptyMessage="No attendance data found"
-        />
-      </div>
-    );
-  };
-
-  const renderAcademicReport = () => {
-    if (!reportData) return null;
-
-    const columns = [
-      { key: 'examId', header: 'Exam ID' },
-      { key: 'studentId', header: 'Student ID' },
-      { key: 'obtainedMarks', header: 'Obtained Marks' },
-      { key: 'grade', header: 'Grade' },
-      { key: 'remarks', header: 'Remarks' },
-    ];
-
-    return (
-      <div>
-        <div className="mb-6 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Academic Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{reportData.summary?.totalExams || 0}</p>
-              <p className="text-sm text-gray-600">Total Exams</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{reportData.summary?.averageGrade || 0}</p>
-              <p className="text-sm text-gray-600">Average Grade</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">{reportData.summary?.highestGrade || '-'}</p>
-              <p className="text-sm text-gray-600">Highest Grade</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-600">{reportData.summary?.lowestGrade || '-'}</p>
-              <p className="text-sm text-gray-600">Lowest Grade</p>
-            </div>
-          </div>
-        </div>
-
-        <Table
-          data={reportData.results || []}
-          columns={columns}
-          loading={loading}
-          emptyMessage="No academic data found"
-        />
-      </div>
-    );
-  };
-
-  const renderFinancialReport = () => {
-    if (!reportData) return null;
-
-    const columns = [
-      { key: 'feeId', header: 'Fee ID' },
-      { key: 'studentId', header: 'Student ID' },
-      { key: 'amount', header: 'Amount' },
-      { key: 'paymentDate', header: 'Payment Date' },
-      { key: 'paymentMethod', header: 'Payment Method' },
-      { key: 'receiptNumber', header: 'Receipt Number' },
-    ];
-
-    return (
-      <div>
-        <div className="mb-6 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Financial Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">${reportData.summary?.totalFees || 0}</p>
-              <p className="text-sm text-gray-600">Total Fees</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">${reportData.summary?.collectedFees || 0}</p>
-              <p className="text-sm text-gray-600">Collected Fees</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-600">${reportData.summary?.outstandingFees || 0}</p>
-              <p className="text-sm text-gray-600">Outstanding Fees</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">{reportData.summary?.collectionRate || 0}%</p>
-              <p className="text-sm text-gray-600">Collection Rate</p>
+        {/* Detailed Table */}
+        <div className="card">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>ID</th>
+                    <th>Class/Department</th>
+                    <th>Status</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(reportData?.records || []).map((record, index) => (
+                    <tr key={index}>
+                      <td>{new Date(record.date).toLocaleDateString()}</td>
+                      <td className="fw-bold">
+                        {record.student ? `${record.student.firstName} ${record.student.lastName}` :
+                         record.staff ? `${record.staff.firstName} ${record.staff.lastName}` : '-'}
+                      </td>
+                      <td>
+                        {record.student?.studentId || record.staff?.employeeId || '-'}
+                      </td>
+                      <td>
+                        {record.student?.currentClass || record.staff?.department || '-'}
+                      </td>
+                      <td>
+                        <span className={`badge ${
+                          record.status === 'present' ? 'bg-success' :
+                          record.status === 'absent' ? 'bg-danger' :
+                          record.status === 'late' ? 'bg-warning' : 'bg-info'
+                        }`}>
+                          {record.status}
+                        </span>
+                      </td>
+                      <td>{record.checkInTime || '-'}</td>
+                      <td>{record.checkOutTime || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-
-        <Table
-          data={reportData.payments || []}
-          columns={columns}
-          loading={loading}
-          emptyMessage="No financial data found"
-        />
       </div>
     );
-  };
-
-  const renderReportContent = () => {
-    switch (activeTab) {
-      case 'students':
-        return renderStudentReport();
-      case 'attendance':
-        return renderAttendanceReport();
-      case 'academic':
-        return renderAcademicReport();
-      case 'financial':
-        return renderFinancialReport();
-      default:
-        return null;
-    }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports</h1>
-        <p className="text-gray-600">Generate and view comprehensive reports for your school.</p>
+    <div className="reports-page">
+      <div className="page-header mb-4">
+        <div>
+          <h2 className="d-flex align-items-center mb-2">
+            <FaChartBar className="me-2" />
+            Reports & Analytics
+          </h2>
+          <p className="text-muted mb-0">Generate comprehensive reports for accounts and attendance</p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+      {/* Main Tabs */}
+      <div className="card mb-4">
+        <div className="card-header p-0">
+          <ul className="nav nav-tabs card-header-tabs">
+            <li className="nav-item">
+              <button 
+                className={`nav-link ${activeTab === 'accounts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('accounts')}
               >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
+                <FaMoneyBillWave className="me-2" />
+                Accounts Reports
               </button>
-            ))}
-          </nav>
+            </li>
+            <li className="nav-item">
+              <button 
+                className={`nav-link ${activeTab === 'attendance' ? 'active' : ''}`}
+                onClick={() => setActiveTab('attendance')}
+              >
+                <FaCalendarAlt className="me-2" />
+                Attendance Reports
+              </button>
+            </li>
+          </ul>
         </div>
-      </div>
+        <div className="card-body">
+          {/* Sub Tabs */}
+          <div className="mb-4">
+            <div className="border-bottom mb-3">
+              <nav className="nav nav-pills">
+                {(activeTab === 'accounts' ? accountsTabs : attendanceTabs).map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`nav-link ${activeSubTab === tab.id ? 'active' : ''}`}
+                    onClick={() => setActiveSubTab(tab.id)}
+                  >
+                    {tab.icon}
+                    <span className="ms-1">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Report Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Select
-            label="Class"
-            options={classes.map(c => ({ value: c.id, label: c.name }))}
-            value={filters.classId}
-            onChange={(value) => setFilters({ ...filters, classId: value })}
-            placeholder="All Classes"
-          />
+          {/* Filters */}
+          <div className="row mb-4">
+            <div className="col-md-2">
+              <label className="form-label">Start Date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={filters.startDate}
+                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label">End Date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={filters.endDate}
+                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label">Period</label>
+              <select 
+                className="form-select"
+                value={filters.period}
+                onChange={(e) => setFilters({ ...filters, period: e.target.value as any })}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            
+            {activeTab === 'accounts' && (
+              <>
+                <div className="col-md-2">
+                  <label className="form-label">Class</label>
+                  <select 
+                    className="form-select"
+                    value={filters.classId}
+                    onChange={(e) => setFilters({ ...filters, classId: e.target.value })}
+                  >
+                    <option value="">All Classes</option>
+                    {classes.map(cls => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name} - {cls.gradeLevel}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label">Student</label>
+                  <select 
+                    className="form-select"
+                    value={filters.studentId}
+                    onChange={(e) => setFilters({ ...filters, studentId: e.target.value })}
+                  >
+                    <option value="">All Students</option>
+                    {students.map(student => (
+                      <option key={student.id} value={student.id}>
+                        {student.firstName} {student.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
 
-          <Select
-            label="Student"
-            options={students.map(s => ({ 
-              value: s.id, 
-              label: `${s.firstName} ${s.lastName}` 
-            }))}
-            value={filters.studentId}
-            onChange={(value) => setFilters({ ...filters, studentId: value })}
-            placeholder="All Students"
-          />
+            {activeTab === 'attendance' && (
+              <>
+                {(activeSubTab === 'student-wise' || activeSubTab === 'class-wise') && (
+                  <>
+                    <div className="col-md-2">
+                      <label className="form-label">Class</label>
+                      <select 
+                        className="form-select"
+                        value={filters.classId}
+                        onChange={(e) => setFilters({ ...filters, classId: e.target.value })}
+                      >
+                        <option value="">All Classes</option>
+                        {classes.map(cls => (
+                          <option key={cls.id} value={cls.id}>
+                            {cls.name} - {cls.gradeLevel}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {activeSubTab === 'student-wise' && (
+                      <div className="col-md-2">
+                        <label className="form-label">Student</label>
+                        <select 
+                          className="form-select"
+                          value={filters.studentId}
+                          onChange={(e) => setFilters({ ...filters, studentId: e.target.value })}
+                        >
+                          <option value="">All Students</option>
+                          {students.map(student => (
+                            <option key={student.id} value={student.id}>
+                              {student.firstName} {student.lastName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {(activeSubTab === 'employee-wise' || activeSubTab === 'department-wise') && (
+                  <>
+                    <div className="col-md-2">
+                      <label className="form-label">Department</label>
+                      <select 
+                        className="form-select"
+                        value={filters.department}
+                        onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+                      >
+                        <option value="">All Departments</option>
+                        <option value="Administration">Administration</option>
+                        <option value="Senior Management">Senior Management</option>
+                        <option value="Teaching">Teaching</option>
+                        <option value="Support Staff">Support Staff</option>
+                      </select>
+                    </div>
+                    {activeSubTab === 'employee-wise' && (
+                      <div className="col-md-2">
+                        <label className="form-label">Employee</label>
+                        <select 
+                          className="form-select"
+                          value={filters.staffId}
+                          onChange={(e) => setFilters({ ...filters, staffId: e.target.value })}
+                        >
+                          <option value="">All Staff</option>
+                          {staff.map(member => (
+                            <option key={member.id} value={member.id}>
+                              {member.firstName} {member.lastName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+            
+            <div className="col-md-2 d-flex align-items-end">
+              <div className="btn-group w-100">
+                <button 
+                  className="btn btn-primary"
+                  onClick={generateReport}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FaSearch className="me-2" />
+                      Generate
+                    </>
+                  )}
+                </button>
+                <button 
+                  className="btn btn-success"
+                  onClick={exportReport}
+                  disabled={!reportData}
+                >
+                  <FaDownload />
+                </button>
+              </div>
+            </div>
+          </div>
 
-          <Input
-            label="Start Date"
-            type="date"
-            value={filters.startDate}
-            onChange={(value) => setFilters({ ...filters, startDate: value })}
-          />
-
-          <Input
-            label="End Date"
-            type="date"
-            value={filters.endDate}
-            onChange={(value) => setFilters({ ...filters, endDate: value })}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-3 mt-6">
-          <Button
-            variant="secondary"
-            onClick={() => setFilters({
-              classId: '',
-              studentId: '',
-              startDate: '',
-              endDate: '',
-            })}
-          >
-            Clear Filters
-          </Button>
-          <Button
-            variant="primary"
-            onClick={generateReport}
-            loading={loading}
-          >
-            Generate Report
-          </Button>
-          {reportData && (
-            <Button
-              variant="success"
-              onClick={exportReport}
-            >
-              Export Report
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Report Content */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            {tabs.find(tab => tab.id === activeTab)?.label}
-          </h3>
-        </div>
-        <div className="p-6">
+          {/* Report Content */}
           {renderReportContent()}
         </div>
       </div>
+
+      <style jsx>{`
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .stat-card {
+          border-radius: 12px;
+          padding: 1.5rem;
+          color: white;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1rem;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+          font-size: 2.5rem;
+          opacity: 0.9;
+        }
+
+        .stat-details {
+          flex: 1;
+        }
+
+        .stat-value {
+          font-size: 1.75rem;
+          font-weight: 700;
+          margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+          font-size: 0.875rem;
+          opacity: 0.9;
+        }
+
+        .bg-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .bg-success {
+          background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .bg-warning {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .bg-info {
+          background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+        }
+
+        .bg-danger {
+          background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .nav-tabs .nav-link {
+          border: none;
+          color: #6c757d;
+          padding: 1rem 1.5rem;
+        }
+
+        .nav-tabs .nav-link.active {
+          color: #667eea;
+          border-bottom: 3px solid #667eea;
+          font-weight: 600;
+        }
+
+        .nav-tabs .nav-link:hover {
+          border-color: transparent;
+          color: #667eea;
+        }
+
+        .nav-pills .nav-link {
+          border-radius: 0.5rem;
+          margin-right: 0.5rem;
+          padding: 0.5rem 1rem;
+        }
+
+        .nav-pills .nav-link.active {
+          background-color: #667eea;
+          color: white;
+        }
+
+        .table th {
+          background-color: #f8f9fa;
+          font-weight: 600;
+        }
+
+        .badge {
+          font-size: 0.75rem;
+          padding: 0.375rem 0.75rem;
+        }
+      `}</style>
     </div>
   );
 };
 
-export default ReportsPage; 
+export default ReportsPage;

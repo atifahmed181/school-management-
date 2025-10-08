@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import RoleLayout from '../../layouts/RoleLayout';
-import api from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { FaUsers, FaPlus, FaSearch, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaCalendarAlt } from 'react-icons/fa';
+import { classAPI, staffAPI } from '../../services/api';
+import { useNotification } from '../../hooks/useNotification';
 
 interface Class {
   id: number;
@@ -187,17 +188,14 @@ export default function ClassesPage() {
 
   if (loading) {
     return (
-      <RoleLayout allowedRoles={['admin']}>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-xl">Loading classes...</div>
-        </div>
-      </RoleLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-xl">Loading classes...</div>
+      </div>
     );
   }
 
   return (
-    <RoleLayout allowedRoles={['admin']}>
-      <div className="p-6">
+    <div className="p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Classes Management</h1>
@@ -575,6 +573,5 @@ export default function ClassesPage() {
           </div>
         )}
       </div>
-    </RoleLayout>
   );
 } 

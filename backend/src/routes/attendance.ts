@@ -11,6 +11,11 @@ router.get('/class/:classId/:date', authorize(['admin', 'teacher', 'user']), Att
 router.get('/range', authorize(['admin', 'teacher']), AttendanceController.getAttendanceByDateRange);
 router.get('/stats', authorize(['admin', 'teacher']), AttendanceController.getAttendanceStats);
 router.get('/today', authorize(['admin', 'teacher']), AttendanceController.getTodayAttendance);
+router.get('/dashboard', authorize(['admin', 'teacher']), AttendanceController.getAttendanceDashboard);
+router.get('/student/:studentId/history', authorize(['admin', 'teacher', 'user']), AttendanceController.getStudentAttendanceHistory);
+router.get('/staff/:staffId/history', authorize(['admin', 'teacher']), AttendanceController.getStaffAttendanceHistory);
+router.get('/students-status', authorize(['admin', 'teacher']), AttendanceController.getStudentsWithAttendanceStatus);
+router.get('/staff-status', authorize(['admin', 'teacher']), AttendanceController.getStaffWithAttendanceStatus);
 router.put('/:id', authorize(['admin', 'teacher']), AttendanceController.updateAttendance);
 router.delete('/:id', authorize(['admin']), AttendanceController.deleteAttendance);
 
