@@ -60,7 +60,11 @@ const AttendanceManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const { showNotification } = useNotification();
+  const notification = useNotification();
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+    notification[type]('Attendance', message);
+  };
 
   // Load dashboard data
   useEffect(() => {
@@ -98,7 +102,7 @@ const AttendanceManagement: React.FC = () => {
   const loadClasses = async () => {
     try {
       const response = await classAPI.getAll();
-      setClasses(response.data.classes || []);
+      setClasses(response.data);
     } catch (error: any) {
       console.error('Error loading classes:', error);
     }
@@ -110,10 +114,10 @@ const AttendanceManagement: React.FC = () => {
     setLoading(true);
     try {
       const response = await attendanceAPI.getStudentsWithStatus(selectedClass, selectedDate);
-      setStudentsWithStatus(response.data.students || []);
+      setStudentsWithStatus(response.data);
     } catch (error: any) {
-      showNotification('Failed to load students', 'error');
       console.error('Error loading students:', error);
+      showNotification('Failed to load students', 'error');
     } finally {
       setLoading(false);
     }
@@ -125,10 +129,10 @@ const AttendanceManagement: React.FC = () => {
     setLoading(true);
     try {
       const response = await attendanceAPI.getStaffWithStatus(selectedDate);
-      setStaffWithStatus(response.data.staff || []);
+      setStaffWithStatus(response.data);
     } catch (error: any) {
-      showNotification('Failed to load staff', 'error');
       console.error('Error loading staff:', error);
+      showNotification('Failed to load staff', 'error');
     } finally {
       setLoading(false);
     }
@@ -139,13 +143,11 @@ const AttendanceManagement: React.FC = () => {
       const student = studentsWithStatus.find(s => s.id === studentId);
       
       if (student?.attendanceId) {
-        // Update existing attendance
         await attendanceAPI.update(student.attendanceId, { status });
         showNotification('Attendance updated successfully', 'success');
       } else {
-        // Mark new attendance
         await attendanceAPI.markStudentAttendance({
-          classId: selectedClass,
+          classId: selectedClass!,
           date: selectedDate,
           attendanceData: [{
             studentId,
@@ -168,7 +170,6 @@ const AttendanceManagement: React.FC = () => {
       const staff = staffWithStatus.find(s => s.id === staffId);
       
       if (staff?.attendanceId) {
-        // Update existing attendance
         await attendanceAPI.update(staff.attendanceId, { 
           status, 
           checkInTime: checkInTime || null,
@@ -176,7 +177,6 @@ const AttendanceManagement: React.FC = () => {
         });
         showNotification('Attendance updated successfully', 'success');
       } else {
-        // Mark new attendance
         await attendanceAPI.markStaffAttendance({
           date: selectedDate,
           attendanceData: [{
@@ -271,19 +271,30 @@ const AttendanceManagement: React.FC = () => {
       return <span className="badge bg-secondary">Not Marked</span>;
     }
 
-    const statusConfig = {
-      present: { class: 'bg-success', icon: <FaCheckCircle />, label: 'Present' },
-      absent: { class: 'bg-danger', icon: <FaTimesCircle />, label: 'Absent' },
-      late: { class: 'bg-warning', icon: <FaClock />, label: 'Late' },
-      excused: { class: 'bg-info', icon: <FaExclamationCircle />, label: 'Excused' },
-      half_day: { class: 'bg-warning', icon: <FaClock />, label: 'Half Day' }
+    const statusConfig: Record<string, { class: string; label: string }> = {
+      present: { class: 'bg-success', label: 'Present' },
+      absent: { class: 'bg-danger', label: 'Absent' },
+      late: { class: 'bg-warning', label: 'Late' },
+      excused: { class: 'bg-info', label: 'Excused' },
+      half_day: { class: 'bg-warning', label: 'Half Day' }
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.absent;
+    const config = statusConfig[status] || statusConfig.absent;
+    
+    const renderIcon = () => {
+      switch (status) {
+        case 'present': return <FaCheckCircle className="me-1" />;
+        case 'absent': return <FaTimesCircle className="me-1" />;
+        case 'late': return <FaClock className="me-1" />;
+        case 'excused': return <FaExclamationCircle className="me-1" />;
+        case 'half_day': return <FaClock className="me-1" />;
+        default: return <FaTimesCircle className="me-1" />;
+      }
+    };
     
     return (
       <span className={`badge ${config.class} d-flex align-items-center gap-1`}>
-        {config.icon} {config.label}
+        {renderIcon()} {config.label}
       </span>
     );
   };
@@ -309,7 +320,7 @@ const AttendanceManagement: React.FC = () => {
   });
 
   return (
-    <div className="attendance-management">
+    <div className="container-fluid p-4">
       <div className="page-header mb-4">
         <div>
           <h2 className="d-flex align-items-center mb-2">
@@ -320,59 +331,65 @@ const AttendanceManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Dashboard Statistics */}
       {dashboard && (
         <div className="row mb-4">
           <div className="col-md-3">
-            <div className="stat-card bg-primary">
-              <div className="stat-icon">
-                <FaUserGraduate />
-              </div>
-              <div className="stat-details">
-                <div className="stat-value">{dashboard.students.present}/{dashboard.students.total}</div>
-                <div className="stat-label">Students Present Today</div>
-                <div className="stat-sub">{dashboard.students.percentage}% Attendance</div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="stat-card bg-danger">
-              <div className="stat-icon">
-                <FaTimesCircle />
-              </div>
-              <div className="stat-details">
-                <div className="stat-value">{dashboard.students.absent}</div>
-                <div className="stat-label">Students Absent</div>
+            <div className="card bg-primary text-white">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <FaUserGraduate size={40} className="me-3" />
+                  <div>
+                    <div className="h3 mb-0">{dashboard.students.present}/{dashboard.students.total}</div>
+                    <small>Students Present Today</small>
+                    <div className="small">{dashboard.students.percentage}% Attendance</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           <div className="col-md-3">
-            <div className="stat-card bg-success">
-              <div className="stat-icon">
-                <FaChalkboardTeacher />
-              </div>
-              <div className="stat-details">
-                <div className="stat-value">{dashboard.staff.present}/{dashboard.staff.total}</div>
-                <div className="stat-label">Staff Present Today</div>
-                <div className="stat-sub">{dashboard.staff.percentage}% Attendance</div>
+            <div className="card bg-danger text-white">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <FaTimesCircle size={40} className="me-3" />
+                  <div>
+                    <div className="h3 mb-0">{dashboard.students.absent}</div>
+                    <small>Students Absent</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           <div className="col-md-3">
-            <div className="stat-card bg-warning">
-              <div className="stat-icon">
-                <FaClock />
+            <div className="card bg-success text-white">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <FaChalkboardTeacher size={40} className="me-3" />
+                  <div>
+                    <div className="h3 mb-0">{dashboard.staff.present}/{dashboard.staff.total}</div>
+                    <small>Staff Present Today</small>
+                    <div className="small">{dashboard.staff.percentage}% Attendance</div>
+                  </div>
+                </div>
               </div>
-              <div className="stat-details">
-                <div className="stat-value">{dashboard.students.late}</div>
-                <div className="stat-label">Late Arrivals</div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card bg-warning text-white">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <FaClock size={40} className="me-3" />
+                  <div>
+                    <div className="h3 mb-0">{dashboard.students.late}</div>
+                    <small>Late Arrivals</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tabs */}
       <div className="card mb-4">
         <div className="card-header p-0">
           <ul className="nav nav-tabs card-header-tabs">
@@ -406,7 +423,6 @@ const AttendanceManagement: React.FC = () => {
           </ul>
         </div>
         <div className="card-body">
-          {/* Filters */}
           <div className="row mb-4">
             <div className="col-md-3">
               <label className="form-label">Date</label>
@@ -466,7 +482,6 @@ const AttendanceManagement: React.FC = () => {
             </div>
           </div>
 
-          {/* Bulk Actions */}
           <div className="mb-3 d-flex gap-2">
             <button 
               className="btn btn-success btn-sm"
@@ -488,7 +503,6 @@ const AttendanceManagement: React.FC = () => {
             </button>
           </div>
 
-          {/* Student Attendance Table */}
           {activeTab === 'students' && (
             <>
               {!selectedClass ? (
@@ -509,8 +523,7 @@ const AttendanceManagement: React.FC = () => {
                       <tr>
                         <th>Student ID</th>
                         <th>Name</th>
-                        <th>Roll No.</th>
-                        <th>Email</th>
+                        <th>Roll Number</th>
                         <th>Status</th>
                         <th>Remarks</th>
                         <th className="text-end">Actions</th>
@@ -519,7 +532,7 @@ const AttendanceManagement: React.FC = () => {
                     <tbody>
                       {filteredStudents.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="text-center py-4 text-muted">
+                          <td colSpan={6} className="text-center py-4 text-muted">
                             No students found
                           </td>
                         </tr>
@@ -529,34 +542,33 @@ const AttendanceManagement: React.FC = () => {
                             <td>{student.studentId}</td>
                             <td className="fw-bold">{student.firstName} {student.lastName}</td>
                             <td>{student.rollNumber}</td>
-                            <td>{student.email}</td>
                             <td>{getStatusBadge(student.attendanceStatus)}</td>
                             <td className="text-muted">{student.remarks || '-'}</td>
                             <td className="text-end">
                               <div className="btn-group btn-group-sm">
-                                <button 
-                                  className="btn btn-outline-success"
+                                <button
+                                  className="btn btn-success"
                                   onClick={() => handleMarkStudentAttendance(student.id, 'present')}
                                   title="Present"
                                 >
                                   <FaCheckCircle />
                                 </button>
-                                <button 
-                                  className="btn btn-outline-danger"
+                                <button
+                                  className="btn btn-danger"
                                   onClick={() => handleMarkStudentAttendance(student.id, 'absent')}
                                   title="Absent"
                                 >
                                   <FaTimesCircle />
                                 </button>
-                                <button 
-                                  className="btn btn-outline-warning"
+                                <button
+                                  className="btn btn-warning"
                                   onClick={() => handleMarkStudentAttendance(student.id, 'late')}
                                   title="Late"
                                 >
                                   <FaClock />
                                 </button>
-                                <button 
-                                  className="btn btn-outline-info"
+                                <button
+                                  className="btn btn-info"
                                   onClick={() => handleMarkStudentAttendance(student.id, 'excused')}
                                   title="Excused"
                                 >
@@ -574,7 +586,6 @@ const AttendanceManagement: React.FC = () => {
             </>
           )}
 
-          {/* Staff Attendance Table */}
           {activeTab === 'staff' && (
             <>
               {loading ? (
@@ -619,31 +630,31 @@ const AttendanceManagement: React.FC = () => {
                             <td className="text-muted">{staff.remarks || '-'}</td>
                             <td className="text-end">
                               <div className="btn-group btn-group-sm">
-                                <button 
-                                  className="btn btn-outline-success"
-                                  onClick={() => handleMarkStaffAttendance(staff.id, 'present', '09:00:00')}
+                                <button
+                                  className="btn btn-success"
+                                  onClick={() => handleMarkStaffAttendance(staff.id, 'present')}
                                   title="Present"
                                 >
                                   <FaCheckCircle />
                                 </button>
-                                <button 
-                                  className="btn btn-outline-danger"
+                                <button
+                                  className="btn btn-danger"
                                   onClick={() => handleMarkStaffAttendance(staff.id, 'absent')}
                                   title="Absent"
                                 >
                                   <FaTimesCircle />
                                 </button>
-                                <button 
-                                  className="btn btn-outline-warning"
-                                  onClick={() => handleMarkStaffAttendance(staff.id, 'late', '09:30:00')}
+                                <button
+                                  className="btn btn-warning"
+                                  onClick={() => handleMarkStaffAttendance(staff.id, 'late')}
                                   title="Late"
                                 >
                                   <FaClock />
                                 </button>
-                                <button 
-                                  className="btn btn-outline-info"
-                                  onClick={() => handleMarkStaffAttendance(staff.id, 'half_day', '09:00:00', '13:00:00')}
-                                  title="Half Day"
+                                <button
+                                  className="btn btn-info"
+                                  onClick={() => handleMarkStaffAttendance(staff.id, 'excused')}
+                                  title="Excused"
                                 >
                                   <FaExclamationCircle />
                                 </button>
@@ -659,248 +670,16 @@ const AttendanceManagement: React.FC = () => {
             </>
           )}
 
-          {/* Attendance Reports Tab */}
           {activeTab === 'reports' && (
-            <div>
-              <div className="row mb-4">
-                <div className="col-md-3">
-                  <label className="form-label">Start Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-3">
-                  <label className="form-label">End Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => {/* Handle end date */}}
-                  />
-                </div>
-                <div className="col-md-3">
-                  <label className="form-label">Class</label>
-                  <select 
-                    className="form-select"
-                    value={selectedClass || ''}
-                    onChange={(e) => setSelectedClass(Number(e.target.value))}
-                  >
-                    <option value="">All Classes</option>
-                    {classes.map(cls => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.name} - {cls.gradeLevel}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 d-flex align-items-end">
-                  <button className="btn btn-primary me-2">
-                    <FaSearch className="me-1" />
-                    Generate Report
-                  </button>
-                  <button className="btn btn-success">
-                    <FaDownload className="me-1" />
-                    Export
-                  </button>
-                </div>
-              </div>
-
-              {/* Reports Summary Cards */}
-              <div className="row mb-4">
-                <div className="col-md-3">
-                  <div className="stat-card bg-primary">
-                    <div className="stat-icon">📊</div>
-                    <div className="stat-details">
-                      <div className="stat-value">150</div>
-                      <div className="stat-label">Total Records</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="stat-card bg-success">
-                    <div className="stat-icon">✅</div>
-                    <div className="stat-details">
-                      <div className="stat-value">135</div>
-                      <div className="stat-label">Present</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="stat-card bg-danger">
-                    <div className="stat-icon">❌</div>
-                    <div className="stat-details">
-                      <div className="stat-value">10</div>
-                      <div className="stat-label">Absent</div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="stat-card bg-warning">
-                    <div className="stat-icon">⏰</div>
-                    <div className="stat-details">
-                      <div className="stat-value">5</div>
-                      <div className="stat-label">Late</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reports Table */}
-              <div className="card">
-                <div className="card-body">
-                  <div className="table-responsive">
-                    <table className="table table-hover">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Name</th>
-                          <th>ID</th>
-                          <th>Class/Department</th>
-                          <th>Status</th>
-                          <th>Check In</th>
-                          <th>Check Out</th>
-                          <th>Remarks</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>2024-01-15</td>
-                          <td className="fw-bold">John Doe</td>
-                          <td>STD-001</td>
-                          <td>Grade 10-A</td>
-                          <td><span className="badge bg-success">Present</span></td>
-                          <td>08:30</td>
-                          <td>15:00</td>
-                          <td>-</td>
-                        </tr>
-                        <tr>
-                          <td>2024-01-15</td>
-                          <td className="fw-bold">Jane Smith</td>
-                          <td>STD-002</td>
-                          <td>Grade 10-A</td>
-                          <td><span className="badge bg-warning">Late</span></td>
-                          <td>09:15</td>
-                          <td>15:00</td>
-                          <td>Traffic</td>
-                        </tr>
-                        <tr>
-                          <td>2024-01-15</td>
-                          <td className="fw-bold">Mike Johnson</td>
-                          <td>EMP-001</td>
-                          <td>Teaching</td>
-                          <td><span className="badge bg-success">Present</span></td>
-                          <td>08:00</td>
-                          <td>17:00</td>
-                          <td>-</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+            <div className="text-center py-5 text-muted">
+              <FaChartBar size={48} className="mb-3" />
+              <p>Reports functionality coming soon...</p>
             </div>
           )}
         </div>
       </div>
-
-      <style jsx>{`
-        .page-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-
-        .stat-card {
-          border-radius: 12px;
-          padding: 1.5rem;
-          color: white;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          margin-bottom: 1rem;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-icon {
-          font-size: 2.5rem;
-          opacity: 0.9;
-        }
-
-        .stat-details {
-          flex: 1;
-        }
-
-        .stat-value {
-          font-size: 1.75rem;
-          font-weight: 700;
-          margin-bottom: 0.25rem;
-        }
-
-        .stat-label {
-          font-size: 0.875rem;
-          opacity: 0.9;
-        }
-
-        .stat-sub {
-          font-size: 0.75rem;
-          opacity: 0.8;
-          margin-top: 0.25rem;
-        }
-
-        .bg-primary {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .bg-success {
-          background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-
-        .bg-danger {
-          background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-        }
-
-        .bg-warning {
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .nav-tabs .nav-link {
-          border: none;
-          color: #6c757d;
-          padding: 1rem 1.5rem;
-        }
-
-        .nav-tabs .nav-link.active {
-          color: #667eea;
-          border-bottom: 3px solid #667eea;
-          font-weight: 600;
-        }
-
-        .nav-tabs .nav-link:hover {
-          border-color: transparent;
-          color: #667eea;
-        }
-
-        .badge {
-          padding: 0.5rem 0.75rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-        }
-
-        .btn-group-sm .btn {
-          padding: 0.25rem 0.5rem;
-        }
-
-        .table td {
-          vertical-align: middle;
-        }
-      `}</style>
     </div>
   );
 };
 
 export default AttendanceManagement;
-

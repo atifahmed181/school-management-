@@ -25,10 +25,20 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
+    "/admin/reports": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/admin/reports.js"
+    ],
     "/attendance": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/attendance.js"
+    ],
+    "/attendance-reports": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/attendance-reports.js"
     ]
   },
   "ampFirstPages": []
