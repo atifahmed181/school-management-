@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaUserCheck, FaCalendarAlt, FaSearch, FaDownload, FaUserGraduate, FaChalkboardTeacher, FaCheckCircle, FaTimesCircle, FaClock, FaExclamationCircle } from 'react-icons/fa';
-import { attendanceAPI, classAPI, studentAPI, staffAPI } from '../services/api';
+import { FaUserCheck, FaCalendarAlt, FaSearch, FaDownload, FaUserGraduate, FaChalkboardTeacher, FaCheckCircle, FaTimesCircle, FaClock, FaExclamationCircle, FaChartBar } from 'react-icons/fa';
+import { attendanceAPI, classAPI, studentAPI, staffAPI, reportAPI } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 
 interface AttendanceDashboard {
@@ -50,7 +50,7 @@ interface StaffWithStatus {
 }
 
 const AttendanceManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'students' | 'staff'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'staff' | 'reports'>('students');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [classes, setClasses] = useState<any[]>([]);
@@ -394,6 +394,15 @@ const AttendanceManagement: React.FC = () => {
                 Staff Attendance
               </button>
             </li>
+            <li className="nav-item">
+              <button 
+                className={`nav-link ${activeTab === 'reports' ? 'active' : ''}`}
+                onClick={() => setActiveTab('reports')}
+              >
+                <FaChartBar className="me-2" />
+                Attendance Reports
+              </button>
+            </li>
           </ul>
         </div>
         <div className="card-body">
@@ -648,6 +657,150 @@ const AttendanceManagement: React.FC = () => {
                 </div>
               )}
             </>
+          )}
+
+          {/* Attendance Reports Tab */}
+          {activeTab === 'reports' && (
+            <div>
+              <div className="row mb-4">
+                <div className="col-md-3">
+                  <label className="form-label">Start Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">End Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => {/* Handle end date */}}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Class</label>
+                  <select 
+                    className="form-select"
+                    value={selectedClass || ''}
+                    onChange={(e) => setSelectedClass(Number(e.target.value))}
+                  >
+                    <option value="">All Classes</option>
+                    {classes.map(cls => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name} - {cls.gradeLevel}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-3 d-flex align-items-end">
+                  <button className="btn btn-primary me-2">
+                    <FaSearch className="me-1" />
+                    Generate Report
+                  </button>
+                  <button className="btn btn-success">
+                    <FaDownload className="me-1" />
+                    Export
+                  </button>
+                </div>
+              </div>
+
+              {/* Reports Summary Cards */}
+              <div className="row mb-4">
+                <div className="col-md-3">
+                  <div className="stat-card bg-primary">
+                    <div className="stat-icon">📊</div>
+                    <div className="stat-details">
+                      <div className="stat-value">150</div>
+                      <div className="stat-label">Total Records</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="stat-card bg-success">
+                    <div className="stat-icon">✅</div>
+                    <div className="stat-details">
+                      <div className="stat-value">135</div>
+                      <div className="stat-label">Present</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="stat-card bg-danger">
+                    <div className="stat-icon">❌</div>
+                    <div className="stat-details">
+                      <div className="stat-value">10</div>
+                      <div className="stat-label">Absent</div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="stat-card bg-warning">
+                    <div className="stat-icon">⏰</div>
+                    <div className="stat-details">
+                      <div className="stat-value">5</div>
+                      <div className="stat-label">Late</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reports Table */}
+              <div className="card">
+                <div className="card-body">
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Name</th>
+                          <th>ID</th>
+                          <th>Class/Department</th>
+                          <th>Status</th>
+                          <th>Check In</th>
+                          <th>Check Out</th>
+                          <th>Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>2024-01-15</td>
+                          <td className="fw-bold">John Doe</td>
+                          <td>STD-001</td>
+                          <td>Grade 10-A</td>
+                          <td><span className="badge bg-success">Present</span></td>
+                          <td>08:30</td>
+                          <td>15:00</td>
+                          <td>-</td>
+                        </tr>
+                        <tr>
+                          <td>2024-01-15</td>
+                          <td className="fw-bold">Jane Smith</td>
+                          <td>STD-002</td>
+                          <td>Grade 10-A</td>
+                          <td><span className="badge bg-warning">Late</span></td>
+                          <td>09:15</td>
+                          <td>15:00</td>
+                          <td>Traffic</td>
+                        </tr>
+                        <tr>
+                          <td>2024-01-15</td>
+                          <td className="fw-bold">Mike Johnson</td>
+                          <td>EMP-001</td>
+                          <td>Teaching</td>
+                          <td><span className="badge bg-success">Present</span></td>
+                          <td>08:00</td>
+                          <td>17:00</td>
+                          <td>-</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

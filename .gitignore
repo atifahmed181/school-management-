@@ -1,1 +1,102 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment variables
 .env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# Next.js cache
+frontend/.next
+frontend/tsconfig.tsbuildinfo
+
+# Backend build output (compiled TypeScript)
+backend/dist/
+backend/build/
+backend/*.js
+backend/*.js.map
+backend/src/**/*.js
+backend/src/**/*.js.map
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+*.lcov
+.nyc_output/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+*.sublime-workspace
+*.sublime-project
+
+# Database files (if using local SQLite)
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+tmp/
+temp/
+
+# Build artifacts
+dist/
+build/
+
+# Optional: Word/Office temp files
+~$*.doc*
+~$*.xls*
+*.tmp
+~*.tmp
+
+# Personal/Temporary documents (you may want to review these)
+New\ Microsoft\ Word\ Document.docx
+*.docx~
+
+# PDF outputs (if auto-generated from documentation)
+# Uncomment if you don't want to commit generated PDFs
+# *.pdf
+
+# Documentation, Scripts, and Documents
+*.md
+*.ps1
+*.docx
