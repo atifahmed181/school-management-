@@ -28,7 +28,7 @@ const ReportsPage: React.FC = () => {
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
-  const { showNotification } = useNotification();
+  const { success, error, warning } = useNotification();
 
   const [filters, setFilters] = useState<ReportFilters>({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -116,11 +116,13 @@ const ReportsPage: React.FC = () => {
         }
       }
 
-      setReportData(response.data);
-      showNotification('Report generated successfully', 'success');
-    } catch (error: any) {
-      showNotification('Failed to generate report', 'error');
-      console.error('Error generating report:', error);
+      if (response) {
+        setReportData(response.data);
+        success('Success', 'Report generated successfully');
+      }
+    } catch (err: any) {
+      error('Error', 'Failed to generate report');
+      console.error('Error generating report:', err);
     } finally {
       setLoading(false);
     }
@@ -128,7 +130,7 @@ const ReportsPage: React.FC = () => {
 
   const exportReport = () => {
     if (!reportData) {
-      showNotification('No data to export', 'warning');
+      warning('Warning', 'No data to export');
       return;
     }
 
@@ -153,7 +155,7 @@ const ReportsPage: React.FC = () => {
     a.download = `${activeTab}-${activeSubTab}-report-${Date.now()}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    showNotification('Report exported successfully', 'success');
+    success('Success', 'Report exported successfully');
   };
 
   const accountsTabs = [
@@ -191,7 +193,7 @@ const ReportsPage: React.FC = () => {
 
   const renderAccountsReport = () => {
     const summary = reportData?.summary || {};
-    
+
     return (
       <div>
         {/* Summary Cards */}
@@ -249,10 +251,9 @@ const ReportsPage: React.FC = () => {
                       <td>{record.fee?.feeType || record.feeType || '-'}</td>
                       <td className="fw-bold">${record.amount}</td>
                       <td>
-                        <span className={`badge ${
-                          record.status === 'completed' ? 'bg-success' : 
-                          record.status === 'pending' ? 'bg-warning' : 'bg-danger'
-                        }`}>
+                        <span className={`badge ${record.status === 'completed' ? 'bg-success' :
+                            record.status === 'pending' ? 'bg-warning' : 'bg-danger'
+                          }`}>
                           {record.status}
                         </span>
                       </td>
@@ -270,7 +271,7 @@ const ReportsPage: React.FC = () => {
 
   const renderAttendanceReport = () => {
     const summary = reportData?.summary || {};
-    
+
     return (
       <div>
         {/* Summary Cards */}
@@ -327,7 +328,7 @@ const ReportsPage: React.FC = () => {
                       <td>{new Date(record.date).toLocaleDateString()}</td>
                       <td className="fw-bold">
                         {record.student ? `${record.student.firstName} ${record.student.lastName}` :
-                         record.staff ? `${record.staff.firstName} ${record.staff.lastName}` : '-'}
+                          record.staff ? `${record.staff.firstName} ${record.staff.lastName}` : '-'}
                       </td>
                       <td>
                         {record.student?.studentId || record.staff?.employeeId || '-'}
@@ -336,11 +337,10 @@ const ReportsPage: React.FC = () => {
                         {record.student?.currentClass || record.staff?.department || '-'}
                       </td>
                       <td>
-                        <span className={`badge ${
-                          record.status === 'present' ? 'bg-success' :
-                          record.status === 'absent' ? 'bg-danger' :
-                          record.status === 'late' ? 'bg-warning' : 'bg-info'
-                        }`}>
+                        <span className={`badge ${record.status === 'present' ? 'bg-success' :
+                            record.status === 'absent' ? 'bg-danger' :
+                              record.status === 'late' ? 'bg-warning' : 'bg-info'
+                          }`}>
                           {record.status}
                         </span>
                       </td>
@@ -374,7 +374,7 @@ const ReportsPage: React.FC = () => {
         <div className="card-header p-0">
           <ul className="nav nav-tabs card-header-tabs">
             <li className="nav-item">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'accounts' ? 'active' : ''}`}
                 onClick={() => setActiveTab('accounts')}
               >
@@ -383,7 +383,7 @@ const ReportsPage: React.FC = () => {
               </button>
             </li>
             <li className="nav-item">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'attendance' ? 'active' : ''}`}
                 onClick={() => setActiveTab('attendance')}
               >
@@ -434,7 +434,7 @@ const ReportsPage: React.FC = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label">Period</label>
-              <select 
+              <select
                 className="form-select"
                 value={filters.period}
                 onChange={(e) => setFilters({ ...filters, period: e.target.value as any })}
@@ -445,12 +445,12 @@ const ReportsPage: React.FC = () => {
                 <option value="yearly">Yearly</option>
               </select>
             </div>
-            
+
             {activeTab === 'accounts' && (
               <>
                 <div className="col-md-2">
                   <label className="form-label">Class</label>
-                  <select 
+                  <select
                     className="form-select"
                     value={filters.classId}
                     onChange={(e) => setFilters({ ...filters, classId: e.target.value })}
@@ -465,7 +465,7 @@ const ReportsPage: React.FC = () => {
                 </div>
                 <div className="col-md-2">
                   <label className="form-label">Student</label>
-                  <select 
+                  <select
                     className="form-select"
                     value={filters.studentId}
                     onChange={(e) => setFilters({ ...filters, studentId: e.target.value })}
@@ -487,7 +487,7 @@ const ReportsPage: React.FC = () => {
                   <>
                     <div className="col-md-2">
                       <label className="form-label">Class</label>
-                      <select 
+                      <select
                         className="form-select"
                         value={filters.classId}
                         onChange={(e) => setFilters({ ...filters, classId: e.target.value })}
@@ -503,7 +503,7 @@ const ReportsPage: React.FC = () => {
                     {activeSubTab === 'student-wise' && (
                       <div className="col-md-2">
                         <label className="form-label">Student</label>
-                        <select 
+                        <select
                           className="form-select"
                           value={filters.studentId}
                           onChange={(e) => setFilters({ ...filters, studentId: e.target.value })}
@@ -519,12 +519,12 @@ const ReportsPage: React.FC = () => {
                     )}
                   </>
                 )}
-                
+
                 {(activeSubTab === 'employee-wise' || activeSubTab === 'department-wise') && (
                   <>
                     <div className="col-md-2">
                       <label className="form-label">Department</label>
-                      <select 
+                      <select
                         className="form-select"
                         value={filters.department}
                         onChange={(e) => setFilters({ ...filters, department: e.target.value })}
@@ -539,7 +539,7 @@ const ReportsPage: React.FC = () => {
                     {activeSubTab === 'employee-wise' && (
                       <div className="col-md-2">
                         <label className="form-label">Employee</label>
-                        <select 
+                        <select
                           className="form-select"
                           value={filters.staffId}
                           onChange={(e) => setFilters({ ...filters, staffId: e.target.value })}
@@ -557,10 +557,10 @@ const ReportsPage: React.FC = () => {
                 )}
               </>
             )}
-            
+
             <div className="col-md-2 d-flex align-items-end">
               <div className="btn-group w-100">
-                <button 
+                <button
                   className="btn btn-primary"
                   onClick={generateReport}
                   disabled={loading}
@@ -577,7 +577,7 @@ const ReportsPage: React.FC = () => {
                     </>
                   )}
                 </button>
-                <button 
+                <button
                   className="btn btn-success"
                   onClick={exportReport}
                   disabled={!reportData}

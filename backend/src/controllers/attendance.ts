@@ -8,7 +8,7 @@ export class AttendanceController {
   static async markStudentAttendance(req: Request, res: Response) {
     try {
       const { classId, date, attendanceData } = req.body;
-      
+
       if (!classId || !date || !attendanceData || !Array.isArray(attendanceData)) {
         return res.status(400).json({ error: 'Invalid request data' });
       }
@@ -32,7 +32,7 @@ export class AttendanceController {
       }));
 
       await Attendance.bulkCreate(attendanceRecords as any);
-      
+
       res.status(201).json({
         message: 'Attendance marked successfully',
         count: attendanceRecords.length
@@ -47,7 +47,7 @@ export class AttendanceController {
   static async markStaffAttendance(req: Request, res: Response) {
     try {
       const { date, attendanceData } = req.body;
-      
+
       if (!date || !attendanceData || !Array.isArray(attendanceData)) {
         return res.status(400).json({ error: 'Invalid request data' });
       }
@@ -63,7 +63,7 @@ export class AttendanceController {
       }));
 
       await Attendance.bulkCreate(attendanceRecords as any);
-      
+
       res.status(201).json({
         message: 'Staff attendance marked successfully',
         count: attendanceRecords.length
@@ -78,7 +78,7 @@ export class AttendanceController {
   static async getClassAttendance(req: Request, res: Response) {
     try {
       const { classId, date } = req.params;
-      
+
       const attendance = await Attendance.findAll({
         where: { classId, date },
         include: [
@@ -101,7 +101,7 @@ export class AttendanceController {
   static async getAttendanceByDateRange(req: Request, res: Response) {
     try {
       const { startDate, endDate, classId, studentId, staffId } = req.query;
-      
+
       const whereClause: any = {
         date: {
           [Op.between]: [startDate, endDate]
@@ -142,7 +142,7 @@ export class AttendanceController {
   static async getAttendanceStats(req: Request, res: Response) {
     try {
       const { classId, startDate, endDate } = req.query;
-      
+
       const whereClause: any = {};
       if (classId) whereClause.classId = classId;
       if (startDate && endDate) {
@@ -152,14 +152,14 @@ export class AttendanceController {
       }
 
       const totalRecords = await Attendance.count({ where: whereClause });
-      const presentCount = await Attendance.count({ 
-        where: { ...whereClause, status: 'present' } 
+      const presentCount = await Attendance.count({
+        where: { ...whereClause, status: 'present' }
       });
-      const absentCount = await Attendance.count({ 
-        where: { ...whereClause, status: 'absent' } 
+      const absentCount = await Attendance.count({
+        where: { ...whereClause, status: 'absent' }
       });
-      const lateCount = await Attendance.count({ 
-        where: { ...whereClause, status: 'late' } 
+      const lateCount = await Attendance.count({
+        where: { ...whereClause, status: 'late' }
       });
 
       const attendancePercentage = totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0;
@@ -189,7 +189,7 @@ export class AttendanceController {
       }
 
       await attendance.update(updateData);
-      
+
       res.json({
         message: 'Attendance updated successfully',
         attendance
@@ -204,14 +204,14 @@ export class AttendanceController {
   static async deleteAttendance(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      
+
       const attendance = await Attendance.findByPk(id);
       if (!attendance) {
         return res.status(404).json({ error: 'Attendance record not found' });
       }
 
       await attendance.destroy();
-      
+
       res.json({ message: 'Attendance record deleted successfully' });
     } catch (error) {
       console.error('Error deleting attendance:', error);
@@ -223,7 +223,7 @@ export class AttendanceController {
   static async getTodayAttendance(req: Request, res: Response) {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
+
       const studentAttendance = await Attendance.findAll({
         where: {
           date: today,
@@ -362,12 +362,12 @@ export class AttendanceController {
 
       // Get all students in the class
       const students = await Student.findAll({
-        where: { presentClass: classId }
+        where: { currentClass: classId as string }
       });
 
       // Get attendance records for this class and date
       const attendanceRecords = await Attendance.findAll({
-        where: { classId, date }
+        where: { classId: classId as string, date: date as string }
       });
 
       // Map students with their attendance status
@@ -407,7 +407,7 @@ export class AttendanceController {
 
       // Get attendance records for this date
       const attendanceRecords = await Attendance.findAll({
-        where: { date, [Op.and]: [Sequelize.literal('"staff_id" IS NOT NULL')] }
+        where: { date: date as string, [Op.and]: [Sequelize.literal('"staff_id" IS NOT NULL')] }
       });
 
       // Map staff with their attendance status
@@ -444,27 +444,27 @@ export class AttendanceController {
       // Student statistics
       const totalStudents = await Student.count();
       const studentAttendanceToday = await Attendance.count({
-        where: { 
+        where: {
           date: today,
           [Op.and]: [Sequelize.literal('"student_id" IS NOT NULL')]
         }
       });
       const studentsPresentToday = await Attendance.count({
-        where: { 
+        where: {
           date: today,
           status: 'present',
           [Op.and]: [Sequelize.literal('"student_id" IS NOT NULL')]
         }
       });
       const studentsAbsentToday = await Attendance.count({
-        where: { 
+        where: {
           date: today,
           status: 'absent',
           [Op.and]: [Sequelize.literal('"student_id" IS NOT NULL')]
         }
       });
       const studentsLateToday = await Attendance.count({
-        where: { 
+        where: {
           date: today,
           status: 'late',
           [Op.and]: [Sequelize.literal('"student_id" IS NOT NULL')]
@@ -474,20 +474,20 @@ export class AttendanceController {
       // Staff statistics
       const totalStaff = await Staff.count();
       const staffAttendanceToday = await Attendance.count({
-        where: { 
+        where: {
           date: today,
           [Op.and]: [Sequelize.literal('"staff_id" IS NOT NULL')]
         }
       });
       const staffPresentToday = await Attendance.count({
-        where: { 
+        where: {
           date: today,
           status: 'present',
           [Op.and]: [Sequelize.literal('"staff_id" IS NOT NULL')]
         }
       });
       const staffAbsentToday = await Attendance.count({
-        where: { 
+        where: {
           date: today,
           status: 'absent',
           [Op.and]: [Sequelize.literal('"staff_id" IS NOT NULL')]
@@ -502,7 +502,7 @@ export class AttendanceController {
           present: studentsPresentToday,
           absent: studentsAbsentToday,
           late: studentsLateToday,
-          percentage: studentAttendanceToday > 0 ? 
+          percentage: studentAttendanceToday > 0 ?
             Math.round((studentsPresentToday / studentAttendanceToday) * 10000) / 100 : 0
         },
         staff: {
@@ -510,7 +510,7 @@ export class AttendanceController {
           marked: staffAttendanceToday,
           present: staffPresentToday,
           absent: staffAbsentToday,
-          percentage: staffAttendanceToday > 0 ? 
+          percentage: staffAttendanceToday > 0 ?
             Math.round((staffPresentToday / staffAttendanceToday) * 10000) / 100 : 0
         }
       });
@@ -519,4 +519,4 @@ export class AttendanceController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
-} 
+}

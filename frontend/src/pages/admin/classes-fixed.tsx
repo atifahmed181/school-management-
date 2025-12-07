@@ -56,7 +56,7 @@ const ClassesPage: React.FC = () => {
     academicYear: '',
     isActive: ''
   });
-  const { showNotification } = useNotification();
+  const { success, error: notifyError } = useNotification();
 
   // Form state for create/edit
   const [formData, setFormData] = useState({
@@ -87,7 +87,7 @@ const ClassesPage: React.FC = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to fetch classes';
       setError(errorMessage);
-      showNotification(errorMessage, 'error');
+      notifyError('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -143,54 +143,54 @@ const ClassesPage: React.FC = () => {
         teacherId: formData.teacherId ? parseInt(formData.teacherId) : undefined,
         capacity: parseInt(formData.capacity.toString())
       };
-      
+
       await classAPI.create(payload);
       setShowCreateModal(false);
       resetForm();
       fetchClasses();
-      showNotification('Class created successfully', 'success');
+      success('Success', 'Class created successfully');
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to create class';
       setError(errorMessage);
-      showNotification(errorMessage, 'error');
+      notifyError('Error', errorMessage);
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClass) return;
-    
+
     try {
       const payload = {
         ...formData,
         teacherId: formData.teacherId ? parseInt(formData.teacherId) : undefined,
         capacity: parseInt(formData.capacity.toString())
       };
-      
+
       await classAPI.update(selectedClass.id, payload);
       setShowEditModal(false);
       setSelectedClass(null);
       resetForm();
       fetchClasses();
-      showNotification('Class updated successfully', 'success');
+      success('Success', 'Class updated successfully');
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to update class';
       setError(errorMessage);
-      showNotification(errorMessage, 'error');
+      notifyError('Error', errorMessage);
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this class? This action cannot be undone.')) return;
-    
+
     try {
       await classAPI.delete(id);
       fetchClasses();
-      showNotification('Class deleted successfully', 'success');
+      success('Success', 'Class deleted successfully');
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to delete class';
       setError(errorMessage);
-      showNotification(errorMessage, 'error');
+      notifyError('Error', errorMessage);
     }
   };
 
@@ -228,15 +228,15 @@ const ClassesPage: React.FC = () => {
 
   const filteredClasses = classes.filter(cls => {
     const matchesSearch = cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cls.gradeLevel.includes(searchTerm) ||
-                         cls.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (cls.teacher && `${cls.teacher.firstName} ${cls.teacher.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+      cls.gradeLevel.includes(searchTerm) ||
+      cls.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cls.teacher && `${cls.teacher.firstName} ${cls.teacher.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesGrade = !filters.gradeLevel || cls.gradeLevel === filters.gradeLevel;
     const matchesYear = !filters.academicYear || cls.academicYear === filters.academicYear;
-    const matchesActive = filters.isActive === '' || 
-                         (filters.isActive === 'true' && cls.isActive) ||
-                         (filters.isActive === 'false' && !cls.isActive);
+    const matchesActive = filters.isActive === '' ||
+      (filters.isActive === 'true' && cls.isActive) ||
+      (filters.isActive === 'false' && !cls.isActive);
 
     return matchesSearch && matchesGrade && matchesYear && matchesActive;
   });
@@ -256,7 +256,7 @@ const ClassesPage: React.FC = () => {
   const getEnrollmentProgress = (current: number, capacity: number) => {
     const percentage = capacity > 0 ? Math.round((current / capacity) * 100) : 0;
     const colorClass = percentage >= 90 ? 'bg-danger' : percentage >= 75 ? 'bg-warning' : 'bg-success';
-    
+
     return (
       <div>
         <div className="d-flex justify-content-between">
@@ -264,8 +264,8 @@ const ClassesPage: React.FC = () => {
           <span className="text-muted">{percentage}%</span>
         </div>
         <div className="progress mt-1" style={{ height: '6px' }}>
-          <div 
-            className={`progress-bar ${colorClass}`} 
+          <div
+            className={`progress-bar ${colorClass}`}
             style={{ width: `${percentage}%` }}
           ></div>
         </div>
@@ -377,7 +377,7 @@ const ClassesPage: React.FC = () => {
               <select
                 className="form-select"
                 value={filters.gradeLevel}
-                onChange={(e) => setFilters({...filters, gradeLevel: e.target.value})}
+                onChange={(e) => setFilters({ ...filters, gradeLevel: e.target.value })}
               >
                 <option value="">All Grades</option>
                 <option value="9">Grade 9</option>
@@ -390,7 +390,7 @@ const ClassesPage: React.FC = () => {
               <select
                 className="form-select"
                 value={filters.academicYear}
-                onChange={(e) => setFilters({...filters, academicYear: e.target.value})}
+                onChange={(e) => setFilters({ ...filters, academicYear: e.target.value })}
               >
                 <option value="">All Years</option>
                 <option value="2024-2025">2024-2025</option>
@@ -401,7 +401,7 @@ const ClassesPage: React.FC = () => {
               <select
                 className="form-select"
                 value={filters.isActive}
-                onChange={(e) => setFilters({...filters, isActive: e.target.value})}
+                onChange={(e) => setFilters({ ...filters, isActive: e.target.value })}
               >
                 <option value="">All Status</option>
                 <option value="true">Active</option>
@@ -416,9 +416,9 @@ const ClassesPage: React.FC = () => {
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
           {error}
-          <button 
-            type="button" 
-            className="btn-close" 
+          <button
+            type="button"
+            className="btn-close"
             onClick={() => setError(null)}
           ></button>
         </div>
@@ -447,7 +447,7 @@ const ClassesPage: React.FC = () => {
                     <td colSpan={8} className="text-center py-4 text-muted">
                       <FaUsers size={48} className="mb-3" />
                       <p>No classes found matching your criteria.</p>
-                      <button 
+                      <button
                         className="btn btn-primary"
                         onClick={() => setShowCreateModal(true)}
                       >
@@ -527,9 +527,9 @@ const ClassesPage: React.FC = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Create New Class</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
+                <button
+                  type="button"
+                  className="btn-close"
                   onClick={() => {
                     setShowCreateModal(false);
                     resetForm();
@@ -545,7 +545,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         required
                       />
                     </div>
@@ -554,7 +554,7 @@ const ClassesPage: React.FC = () => {
                       <select
                         className="form-select"
                         value={formData.gradeLevel}
-                        onChange={(e) => setFormData({...formData, gradeLevel: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
                         required
                       >
                         <option value="">Select Grade</option>
@@ -570,7 +570,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.section}
-                        onChange={(e) => setFormData({...formData, section: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                         required
                       />
                     </div>
@@ -581,7 +581,7 @@ const ClassesPage: React.FC = () => {
                       <select
                         className="form-select"
                         value={formData.academicYear}
-                        onChange={(e) => setFormData({...formData, academicYear: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
                         required
                       >
                         <option value="">Select Year</option>
@@ -595,7 +595,7 @@ const ClassesPage: React.FC = () => {
                         type="number"
                         className="form-control"
                         value={formData.capacity}
-                        onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
+                        onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
                         min="1"
                         max="100"
                         required
@@ -606,7 +606,7 @@ const ClassesPage: React.FC = () => {
                       <select
                         className="form-select"
                         value={formData.teacherId}
-                        onChange={(e) => setFormData({...formData, teacherId: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
                       >
                         <option value="">Select Teacher</option>
                         {staff.map(teacher => (
@@ -624,7 +624,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.roomNumber}
-                        onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
                       />
                     </div>
                     <div className="col-md-6 mb-3">
@@ -633,7 +633,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.schedule}
-                        onChange={(e) => setFormData({...formData, schedule: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                         placeholder="e.g., Mon-Fri 8:00 AM - 3:00 PM"
                       />
                     </div>
@@ -644,7 +644,7 @@ const ClassesPage: React.FC = () => {
                       className="form-control"
                       rows={3}
                       value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     ></textarea>
                   </div>
                   <div className="form-check">
@@ -652,7 +652,7 @@ const ClassesPage: React.FC = () => {
                       type="checkbox"
                       className="form-check-input"
                       checked={formData.isActive}
-                      onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                     />
                     <label className="form-check-label">Active Class</label>
                   </div>
@@ -685,9 +685,9 @@ const ClassesPage: React.FC = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Edit Class - {selectedClass.name}</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
+                <button
+                  type="button"
+                  className="btn-close"
                   onClick={() => {
                     setShowEditModal(false);
                     setSelectedClass(null);
@@ -704,7 +704,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         required
                       />
                     </div>
@@ -713,7 +713,7 @@ const ClassesPage: React.FC = () => {
                       <select
                         className="form-select"
                         value={formData.gradeLevel}
-                        onChange={(e) => setFormData({...formData, gradeLevel: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
                         required
                       >
                         <option value="">Select Grade</option>
@@ -729,7 +729,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.section}
-                        onChange={(e) => setFormData({...formData, section: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                         required
                       />
                     </div>
@@ -740,7 +740,7 @@ const ClassesPage: React.FC = () => {
                       <select
                         className="form-select"
                         value={formData.academicYear}
-                        onChange={(e) => setFormData({...formData, academicYear: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
                         required
                       >
                         <option value="">Select Year</option>
@@ -754,7 +754,7 @@ const ClassesPage: React.FC = () => {
                         type="number"
                         className="form-control"
                         value={formData.capacity}
-                        onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
+                        onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
                         min="1"
                         max="100"
                         required
@@ -765,7 +765,7 @@ const ClassesPage: React.FC = () => {
                       <select
                         className="form-select"
                         value={formData.teacherId}
-                        onChange={(e) => setFormData({...formData, teacherId: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
                       >
                         <option value="">Select Teacher</option>
                         {staff.map(teacher => (
@@ -783,7 +783,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.roomNumber}
-                        onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
                       />
                     </div>
                     <div className="col-md-6 mb-3">
@@ -792,7 +792,7 @@ const ClassesPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={formData.schedule}
-                        onChange={(e) => setFormData({...formData, schedule: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                         placeholder="e.g., Mon-Fri 8:00 AM - 3:00 PM"
                       />
                     </div>
@@ -803,7 +803,7 @@ const ClassesPage: React.FC = () => {
                       className="form-control"
                       rows={3}
                       value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     ></textarea>
                   </div>
                   <div className="form-check">
@@ -811,7 +811,7 @@ const ClassesPage: React.FC = () => {
                       type="checkbox"
                       className="form-check-input"
                       checked={formData.isActive}
-                      onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                     />
                     <label className="form-check-label">Active Class</label>
                   </div>

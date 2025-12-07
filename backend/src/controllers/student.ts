@@ -7,6 +7,44 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
   try {
     const studentData = req.body;
     
+    console.log('Creating student with data:', studentData);
+    
+    // Validate required fields
+    if (!studentData.firstName || !studentData.lastName) {
+      return res.status(400).json({
+        success: false,
+        message: 'First name and last name are required'
+      });
+    }
+    
+    if (!studentData.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+    
+    if (!studentData.dateOfBirth) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date of birth is required'
+      });
+    }
+    
+    if (!studentData.admissionDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admission date is required'
+      });
+    }
+    
+    if (!studentData.currentClass) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current class is required'
+      });
+    }
+    
     // Generate unique student ID if not provided
     if (!studentData.studentId) {
       const currentYear = new Date().getFullYear();
@@ -29,12 +67,36 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
     }
 
     const student = await Student.create(studentData);
+    console.log('Student created successfully:', student.id);
+    
     res.status(201).json({
       success: true,
       data: student,
       message: 'Student created successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error creating student:', error);
+    
+    // Handle Sequelize validation errors
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: error.errors.map((e: any) => ({
+          field: e.path,
+          message: e.message
+        }))
+      });
+    }
+    
+    // Handle unique constraint errors
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'A student with this information already exists'
+      });
+    }
+    
     next(error);
   }
 };

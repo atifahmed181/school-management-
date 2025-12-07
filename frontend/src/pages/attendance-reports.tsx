@@ -38,7 +38,7 @@ const AttendanceReports: React.FC = () => {
   const [stats, setStats] = useState<AttendanceStats | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const { showNotification } = useNotification();
+  const { success, error, warning } = useNotification();
 
   useEffect(() => {
     loadClasses();
@@ -93,10 +93,10 @@ const AttendanceReports: React.FC = () => {
 
       setStats(statsResponse.data);
       setAttendanceRecords(recordsResponse.data.attendance || []);
-      showNotification('Report generated successfully', 'success');
-    } catch (error: any) {
-      showNotification('Failed to generate report', 'error');
-      console.error('Error generating report:', error);
+      success('Success', 'Report generated successfully');
+    } catch (err: any) {
+      error('Error', 'Failed to generate report');
+      console.error('Error generating report:', err);
     } finally {
       setLoading(false);
     }
@@ -112,21 +112,21 @@ const AttendanceReports: React.FC = () => {
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.absent;
-    
+
     return <span className={`badge ${config.class}`}>{config.label}</span>;
   };
 
   const exportToCSV = () => {
     if (attendanceRecords.length === 0) {
-      showNotification('No data to export', 'warning');
+      warning('Warning', 'No data to export');
       return;
     }
 
     const headers = ['Date', 'Name', 'ID', 'Status', 'Remarks'];
     const rows = attendanceRecords.map(record => [
       record.date,
-      record.student ? `${record.student.firstName} ${record.student.lastName}` : 
-      record.staff ? `${record.staff.firstName} ${record.staff.lastName}` : 'N/A',
+      record.student ? `${record.student.firstName} ${record.student.lastName}` :
+        record.staff ? `${record.staff.firstName} ${record.staff.lastName}` : 'N/A',
       record.student?.studentId || record.staff?.employeeId || 'N/A',
       record.status,
       record.remarks || ''
@@ -144,7 +144,7 @@ const AttendanceReports: React.FC = () => {
     a.download = `attendance-report-${Date.now()}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    showNotification('Report exported successfully', 'success');
+    success('Success', 'Report exported successfully');
   };
 
   return (
@@ -168,7 +168,7 @@ const AttendanceReports: React.FC = () => {
           <div className="row">
             <div className="col-md-3 mb-3">
               <label className="form-label">Report Type</label>
-              <select 
+              <select
                 className="form-select"
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value as any)}
@@ -203,7 +203,7 @@ const AttendanceReports: React.FC = () => {
             {reportType === 'class' && (
               <div className="col-md-3 mb-3">
                 <label className="form-label">Select Class</label>
-                <select 
+                <select
                   className="form-select"
                   value={selectedClass || ''}
                   onChange={(e) => setSelectedClass(Number(e.target.value))}
@@ -221,7 +221,7 @@ const AttendanceReports: React.FC = () => {
             {reportType === 'student' && (
               <div className="col-md-3 mb-3">
                 <label className="form-label">Select Student</label>
-                <select 
+                <select
                   className="form-select"
                   value={selectedStudent || ''}
                   onChange={(e) => setSelectedStudent(Number(e.target.value))}
@@ -239,7 +239,7 @@ const AttendanceReports: React.FC = () => {
             {reportType === 'staff' && (
               <div className="col-md-3 mb-3">
                 <label className="form-label">Select Staff</label>
-                <select 
+                <select
                   className="form-select"
                   value={selectedStaff || ''}
                   onChange={(e) => setSelectedStaff(Number(e.target.value))}
@@ -256,7 +256,7 @@ const AttendanceReports: React.FC = () => {
           </div>
 
           <div className="d-flex gap-2">
-            <button 
+            <button
               className="btn btn-primary"
               onClick={generateReport}
               disabled={loading}
@@ -273,7 +273,7 @@ const AttendanceReports: React.FC = () => {
                 </>
               )}
             </button>
-            <button 
+            <button
               className="btn btn-success"
               onClick={exportToCSV}
               disabled={!stats || attendanceRecords.length === 0}
@@ -463,4 +463,3 @@ const AttendanceReports: React.FC = () => {
 };
 
 export default AttendanceReports;
-

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FaPlus, FaSearch, FaEdit, FaTrash, FaUserGraduate, 
+import {
+  FaPlus, FaSearch, FaEdit, FaTrash, FaUserGraduate,
   FaEllipsisV, FaFilter, FaDownload, FaUpload, FaEye
 } from 'react-icons/fa';
 import { studentAPI } from '../services/api';
@@ -105,33 +105,42 @@ const Students: React.FC = () => {
     const formData = new FormData(form);
     console.log('Form data:', Object.fromEntries(formData));
 
-    // Build payload object
+    // Build payload object with proper field mapping
+    // Helper to safely get string from formData
+    const getString = (key: string): string => {
+      const value = formData.get(key);
+      return typeof value === 'string' ? value : '';
+    };
+
+    // Build payload object with proper field mapping
     const payload = {
-      firstName: formData.get('firstName') || '',
-      lastName: formData.get('lastName') || '',
-      email: formData.get('email') || '',
-      studentId: formData.get('studentId') || '',
-      rollNumber: formData.get('rollNumber') || '',
-      admissionDate: formData.get('admissionDate') || '',
-      dateOfBirth: formData.get('dateOfBirth') || '',
-      admissionClass: formData.get('admissionClass') || '',
-      currentClass: formData.get('currentClass') || '',
-      section: formData.get('section') || '',
-      phone: formData.get('phone') || '',
-      fatherName: formData.get('fatherName') || '',
-      fatherCnic: formData.get('fatherCnic') || '',
-      fatherCell: formData.get('fatherCell') || '',
-      fatherOccupation: formData.get('fatherOccupation') || '',
-      motherName: formData.get('motherName') || '',
-      motherCnic: formData.get('motherCnic') || '',
-      motherCell: formData.get('motherCell') || '',
-      childNumber: formData.get('childNumber') || '',
+      firstName: getString('firstName'),
+      lastName: getString('lastName'),
+      email: getString('email'),
+      studentId: getString('studentId'),
+      rollNumber: getString('rollNumber'),
+      admissionDate: getString('admissionDate'),
+      dateOfBirth: getString('dateOfBirth'),
+      admissionClass: getString('admissionClass'),
+      currentClass: getString('currentClass'),
+      section: getString('section'),
+      gender: getString('gender'),
+      phoneNumber: getString('phone'),
+      fatherName: getString('fatherName'),
+      fatherCnic: getString('fatherCnic'),
+      fatherCell: getString('fatherCell'),
+      fatherOccupation: getString('fatherOccupation'),
+      motherName: getString('motherName'),
+      motherCnic: getString('motherCnic'),
+      motherCell: getString('motherCell'),
+      childNumber: getString('childNumber'),
+      status: 'active',
     };
 
     // Client-side validation
     const newErrors: FormErrors = {};
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-    
+
     if (!payload.firstName?.trim()) newErrors.firstName = 'First name is required';
     if (!payload.lastName?.trim()) newErrors.lastName = 'Last name is required';
     if (!payload.email?.trim() || !emailRegex.test(payload.email)) newErrors.email = 'Valid email is required';
@@ -153,7 +162,7 @@ const Students: React.FC = () => {
       // Call the actual API
       console.log('Saving student data:', payload);
       const response = await studentAPI.create(payload);
-      
+
       if (response.data && response.data.success) {
         setSaveSuccess(true);
         console.log('Student saved successfully:', response.data.data);
@@ -165,7 +174,7 @@ const Students: React.FC = () => {
       }
     } catch (err: any) {
       let errorMessage = 'Failed to save. Please try again.';
-      
+
       if (err?.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err?.response?.data?.errors) {
@@ -174,21 +183,21 @@ const Students: React.FC = () => {
       } else if (err?.message) {
         errorMessage = err.message;
       }
-      
+
       setSaveError(errorMessage);
       setSaving(false);
     }
   };
 
   const filteredStudents = students.filter(student => {
-    const matchesSearch = 
+    const matchesSearch =
       student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesClass = !filterClass || student.class === filterClass;
-    
+
     return matchesSearch && matchesClass;
   });
 
@@ -205,7 +214,7 @@ const Students: React.FC = () => {
               <p className="text-muted mb-0">Manage all student information and records</p>
             </div>
             <div className="mt-3 mt-md-0">
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={() => {
                   console.log('Add button clicked');
@@ -238,9 +247,9 @@ const Students: React.FC = () => {
                 </div>
                 <div className="col-xs-12 col-md-6">
                   <div className="d-flex flex-wrap gap-2">
-                    <select 
+                    <select
                       className="form-select flex-grow-1"
-                      value={filterClass} 
+                      value={filterClass}
                       onChange={(e) => setFilterClass(e.target.value)}
                     >
                       <option value="">All Classes</option>
@@ -249,7 +258,7 @@ const Students: React.FC = () => {
                       <option value="9-A">9-A</option>
                       <option value="9-B">9-B</option>
                     </select>
-                    <button 
+                    <button
                       className="btn btn-outline-secondary d-md-none"
                       onClick={() => setShowFilters(!showFilters)}
                     >
@@ -323,18 +332,18 @@ const Students: React.FC = () => {
                           </td>
                           <td className="text-end">
                             <div className="d-flex gap-2 justify-content-end">
-                              <button 
+                              <button
                                 className="btn btn-outline-primary btn-sm"
                                 onClick={() => handleShowModal(student)}
                               >
                                 <FaEdit />
                               </button>
-                              <button 
+                              <button
                                 className="btn btn-outline-info btn-sm"
                               >
                                 <FaEye />
                               </button>
-                              <button 
+                              <button
                                 className="btn btn-outline-danger btn-sm"
                                 onClick={() => {
                                   if (window.confirm('Are you sure you want to delete this student?')) {
@@ -366,9 +375,9 @@ const Students: React.FC = () => {
                 <h5 className="modal-title">
                   {currentStudent ? 'Edit Student' : 'Add New Student'}
                 </h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
+                <button
+                  type="button"
+                  className="btn-close"
                   onClick={handleCloseModal}
                 ></button>
               </div>
@@ -377,11 +386,11 @@ const Students: React.FC = () => {
                   <div className="row">
                     {/* Photo Upload */}
                     <div className="col-md-2">
-                      <div 
-                        className="border-2 border-dashed rounded p-2 text-center" 
-                        style={{ 
-                          width: '110px', 
-                          height: '120px', 
+                      <div
+                        className="border-2 border-dashed rounded p-2 text-center"
+                        style={{
+                          width: '110px',
+                          height: '120px',
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
@@ -392,12 +401,12 @@ const Students: React.FC = () => {
                       >
                         {selectedPhoto ? (
                           <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <img 
-                              src={URL.createObjectURL(selectedPhoto)} 
-                              alt="Preview" 
-                              style={{ 
-                                maxWidth: '100%', 
-                                maxHeight: '100%', 
+                            <img
+                              src={URL.createObjectURL(selectedPhoto)}
+                              alt="Preview"
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
                                 objectFit: 'cover',
                                 borderRadius: '4px'
                               }}
@@ -412,16 +421,16 @@ const Students: React.FC = () => {
                             </div>
                           </div>
                         )}
-                        <input 
-                          type="file" 
-                          id="photoInput" 
-                          accept="image/*" 
-                          style={{ display: 'none' }} 
+                        <input
+                          type="file"
+                          id="photoInput"
+                          accept="image/*"
+                          style={{ display: 'none' }}
                           onChange={handlePhotoUpload}
                         />
                       </div>
                     </div>
-                    
+
                     {/* Basic Info */}
                     <div className="col-md-10">
                       <div className="row">
@@ -476,7 +485,7 @@ const Students: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="row">
                         <div className="col-md-3">
                           <div className="mb-2">
@@ -507,9 +516,9 @@ const Students: React.FC = () => {
                         <div className="col-md-3">
                           <div className="mb-2">
                             <label className="form-label small">Admission Date</label>
-                            <input 
-                              type="date" 
-                              name="admissionDate" 
+                            <input
+                              type="date"
+                              name="admissionDate"
                               className={`form-control form-control-sm ${errors.admissionDate ? 'is-invalid' : ''}`}
                             />
                             {errors.admissionDate && <div className="invalid-feedback">{errors.admissionDate}</div>}
@@ -518,18 +527,68 @@ const Students: React.FC = () => {
                         <div className="col-md-3">
                           <div className="mb-2">
                             <label className="form-label small">Date of Birth</label>
-                            <input 
-                              type="date" 
-                              name="dateOfBirth" 
+                            <input
+                              type="date"
+                              name="dateOfBirth"
                               className={`form-control form-control-sm ${errors.dateOfBirth ? 'is-invalid' : ''}`}
                             />
                             {errors.dateOfBirth && <div className="invalid-feedback">{errors.dateOfBirth}</div>}
                           </div>
                         </div>
                       </div>
+
+                      <div className="row">
+                        <div className="col-md-3">
+                          <div className="mb-2">
+                            <label className="form-label small">Admission Class</label>
+                            <input
+                              type="text"
+                              name="admissionClass"
+                              className={`form-control form-control-sm ${errors.admissionClass ? 'is-invalid' : ''}`}
+                              placeholder="e.g., Grade 1"
+                            />
+                            {errors.admissionClass && <div className="invalid-feedback">{errors.admissionClass}</div>}
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="mb-2">
+                            <label className="form-label small">Present Class</label>
+                            <input
+                              type="text"
+                              name="currentClass"
+                              className={`form-control form-control-sm ${errors.currentClass ? 'is-invalid' : ''}`}
+                              placeholder="e.g., Grade 5"
+                            />
+                            {errors.currentClass && <div className="invalid-feedback">{errors.currentClass}</div>}
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="mb-2">
+                            <label className="form-label small">Section</label>
+                            <input
+                              type="text"
+                              name="section"
+                              className={`form-control form-control-sm ${errors.section ? 'is-invalid' : ''}`}
+                              placeholder="e.g., A"
+                            />
+                            {errors.section && <div className="invalid-feedback">{errors.section}</div>}
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="mb-2">
+                            <label className="form-label small">Gender</label>
+                            <select name="gender" className="form-select form-select-sm">
+                              <option value="">Select Gender</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  
+
                   {/* Parents Info */}
                   <div className="row">
                     <div className="col-md-6">
@@ -538,22 +597,22 @@ const Students: React.FC = () => {
                         <div className="col-md-6">
                           <div className="mb-2">
                             <label className="form-label small">Father's Name</label>
-                            <input 
-                              type="text" 
-                              name="fatherName" 
-                              className="form-control form-control-sm" 
-                              placeholder="Father's name" 
+                            <input
+                              type="text"
+                              name="fatherName"
+                              className="form-control form-control-sm"
+                              placeholder="Father's name"
                             />
                           </div>
                         </div>
                         <div className="col-md-6">
                           <div className="mb-2">
                             <label className="form-label small">Father's CNIC</label>
-                            <input 
-                              type="text" 
-                              name="fatherCnic" 
-                              className="form-control form-control-sm" 
-                              placeholder="XXXXX-XXXXXXX-X" 
+                            <input
+                              type="text"
+                              name="fatherCnic"
+                              className="form-control form-control-sm"
+                              placeholder="XXXXX-XXXXXXX-X"
                             />
                           </div>
                         </div>
@@ -562,50 +621,50 @@ const Students: React.FC = () => {
                         <div className="col-md-6">
                           <div className="mb-2">
                             <label className="form-label small">Father's Cell</label>
-                            <input 
-                              type="text" 
-                              name="fatherCell" 
-                              className="form-control form-control-sm" 
-                              placeholder="03XX-XXXXXXX" 
+                            <input
+                              type="text"
+                              name="fatherCell"
+                              className="form-control form-control-sm"
+                              placeholder="03XX-XXXXXXX"
                             />
                           </div>
                         </div>
                         <div className="col-md-6">
                           <div className="mb-2">
                             <label className="form-label small">Father's Occupation</label>
-                            <input 
-                              type="text" 
-                              name="fatherOccupation" 
-                              className="form-control form-control-sm" 
-                              placeholder="Occupation" 
+                            <input
+                              type="text"
+                              name="fatherOccupation"
+                              className="form-control form-control-sm"
+                              placeholder="Occupation"
                             />
                           </div>
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="col-md-6">
                       <h6 className="text-primary mb-2">Mother's Information</h6>
                       <div className="row">
                         <div className="col-md-6">
                           <div className="mb-2">
                             <label className="form-label small">Mother's Name</label>
-                            <input 
-                              type="text" 
-                              name="motherName" 
-                              className="form-control form-control-sm" 
-                              placeholder="Mother's name" 
+                            <input
+                              type="text"
+                              name="motherName"
+                              className="form-control form-control-sm"
+                              placeholder="Mother's name"
                             />
                           </div>
                         </div>
                         <div className="col-md-6">
                           <div className="mb-2">
                             <label className="form-label small">Mother's CNIC</label>
-                            <input 
-                              type="text" 
-                              name="motherCnic" 
-                              className="form-control form-control-sm" 
-                              placeholder="XXXXX-XXXXXXX-X" 
+                            <input
+                              type="text"
+                              name="motherCnic"
+                              className="form-control form-control-sm"
+                              placeholder="XXXXX-XXXXXXX-X"
                             />
                           </div>
                         </div>
@@ -614,11 +673,11 @@ const Students: React.FC = () => {
                         <div className="col-md-6">
                           <div className="mb-2">
                             <label className="form-label small">Mother's Cell</label>
-                            <input 
-                              type="text" 
-                              name="motherCell" 
-                              className="form-control form-control-sm" 
-                              placeholder="03XX-XXXXXXX" 
+                            <input
+                              type="text"
+                              name="motherCell"
+                              className="form-control form-control-sm"
+                              placeholder="03XX-XXXXXXX"
                             />
                           </div>
                         </div>
@@ -643,16 +702,16 @@ const Students: React.FC = () => {
                     <div className="alert alert-danger small mb-2">{saveError}</div>
                   )}
                   <div className="modal-footer">
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary" 
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
                       onClick={handleCloseModal}
                     >
                       Cancel
                     </button>
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary" 
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
                       disabled={saving}
                     >
                       {currentStudent ? 'Update Student' : 'Add Student'}

@@ -7,7 +7,7 @@ export class SubjectController {
   static async create(req: Request, res: Response) {
     try {
       const subjectData = req.body;
-      
+
       // Validate required fields
       const requiredFields = ['name', 'code', 'category', 'credits'];
       for (const field of requiredFields) {
@@ -26,7 +26,7 @@ export class SubjectController {
       }
 
       const newSubject = await Subject.create(subjectData);
-      
+
       res.status(201).json({
         message: 'Subject created successfully',
         subject: newSubject
@@ -44,7 +44,7 @@ export class SubjectController {
       const offset = (Number(page) - 1) * Number(limit);
 
       const whereClause: any = {};
-      
+
       if (search) {
         whereClause[Op.or] = [
           { name: { [Op.iLike]: `%${search}%` } },
@@ -95,7 +95,7 @@ export class SubjectController {
   static async getById(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      
+
       const subject = await Subject.findByPk(id);
 
       if (!subject) {
@@ -132,7 +132,7 @@ export class SubjectController {
       }
 
       await subject.update(updateData);
-      
+
       res.json({
         message: 'Subject updated successfully',
         subject
@@ -147,14 +147,14 @@ export class SubjectController {
   static async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      
+
       const subject = await Subject.findByPk(id);
       if (!subject) {
         return res.status(404).json({ error: 'Subject not found' });
       }
 
       await subject.destroy();
-      
+
       res.json({ message: 'Subject deleted successfully' });
     } catch (error) {
       console.error('Error deleting subject:', error);
@@ -166,7 +166,7 @@ export class SubjectController {
   static async getByCategory(req: Request, res: Response) {
     try {
       const { category } = req.params;
-      
+
       const subjects = await Subject.findAll({
         where: { category, isActive: true },
         order: [['name', 'ASC']]
@@ -183,7 +183,7 @@ export class SubjectController {
   static async getByDepartment(req: Request, res: Response) {
     try {
       const { department } = req.params;
-      
+
       const subjects = await Subject.findAll({
         where: { department, isActive: true },
         order: [['name', 'ASC']]
@@ -200,7 +200,7 @@ export class SubjectController {
   static async getByGradeLevel(req: Request, res: Response) {
     try {
       const { gradeLevel } = req.params;
-      
+
       const subjects = await Subject.findAll({
         where: { gradeLevel, isActive: true },
         order: [['name', 'ASC']]
@@ -217,7 +217,7 @@ export class SubjectController {
   static async search(req: Request, res: Response) {
     try {
       const { q } = req.query;
-      
+
       if (!q) {
         return res.status(400).json({ error: 'Search query is required' });
       }
@@ -256,7 +256,7 @@ export class SubjectController {
           'department',
           [Subject.sequelize!.fn('COUNT', Subject.sequelize!.col('id')), 'count']
         ],
-        where: { department: { [Op.ne]: null } },
+        where: { department: { [Op.not]: null as any } },
         group: ['department']
       });
 

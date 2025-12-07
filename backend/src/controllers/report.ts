@@ -4,7 +4,7 @@ import { Staff } from '../models/staff';
 import { Class } from '../models/class';
 import { Attendance } from '../models/attendance';
 import { Exam, ExamResult } from '../models/exam';
-import { Fee, FeePayment } from '../models/fee';
+import { Fee, FeePayment } from '../models';
 import { Subject } from '../models/subject';
 import { Op } from 'sequelize';
 import { sequelize } from '../models';
@@ -57,14 +57,12 @@ export class ReportController {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
 
-      const monthlyFeeCollection = await FeePayment.sum('amount', {
+      const monthlyFeeCollection = await FeePayment.sum('amountPaid', {
         where: {
-          paymentDate: {
-            [Op.and]: [
-              sequelize.where(sequelize.fn('EXTRACT', sequelize.literal('MONTH FROM "paymentDate"')), currentMonth),
-              sequelize.where(sequelize.fn('EXTRACT', sequelize.literal('YEAR FROM "paymentDate"')), currentYear)
-            ]
-          }
+          [Op.and]: [
+            sequelize.where(sequelize.fn('EXTRACT', sequelize.literal('MONTH FROM "paymentDate"')), currentMonth),
+            sequelize.where(sequelize.fn('EXTRACT', sequelize.literal('YEAR FROM "paymentDate"')), currentYear)
+          ]
         }
       });
 
@@ -99,7 +97,7 @@ export class ReportController {
   static async getStudentPerformance(req: Request, res: Response) {
     try {
       const { studentId, academicYear } = req.query;
-      
+
       if (!studentId) {
         return res.status(400).json({ error: 'Student ID is required' });
       }
@@ -111,7 +109,7 @@ export class ReportController {
 
       // Get all exam results for the student
       const examResults = await ExamResult.findAll({
-        where: { studentId },
+        where: { studentId: studentId as string },
         include: [
           {
             model: Exam,
@@ -134,8 +132,8 @@ export class ReportController {
       const failedExams = examResults.filter(r => r.status === 'fail').length;
       const absentExams = examResults.filter(r => r.isAbsent).length;
 
-      const averagePercentage = totalExams > 0 
-        ? examResults.reduce((sum, r) => sum + Number(r.percentage), 0) / totalExams 
+      const averagePercentage = totalExams > 0
+        ? examResults.reduce((sum, r) => sum + Number(r.percentage), 0) / totalExams
         : 0;
 
       // Subject-wise performance
@@ -150,7 +148,7 @@ export class ReportController {
             totalMarks: 0
           };
         }
-        
+
         subjectPerformance[subjectName].totalExams++;
         if (result.status === 'pass') {
           subjectPerformance[subjectName].passedExams++;
@@ -192,7 +190,7 @@ export class ReportController {
   static async getClassPerformance(req: Request, res: Response) {
     try {
       const { classId, examId } = req.query;
-      
+
       if (!classId) {
         return res.status(400).json({ error: 'Class ID is required' });
       }
@@ -206,7 +204,7 @@ export class ReportController {
       if (examId) {
         // Specific exam results
         examResults = await ExamResult.findAll({
-          where: { examId },
+          where: { examId: examId as string },
           include: [
             {
               model: Student,
@@ -249,11 +247,11 @@ export class ReportController {
       const failedStudents = examResults.filter(r => r.status === 'fail').length;
 
       const presentResults = examResults.filter(r => !r.isAbsent);
-      const averageMarks = presentResults.length > 0 
-        ? presentResults.reduce((sum, r) => sum + Number(r.marksObtained), 0) / presentResults.length 
+      const averageMarks = presentResults.length > 0
+        ? presentResults.reduce((sum, r) => sum + Number(r.marksObtained), 0) / presentResults.length
         : 0;
-      const averagePercentage = presentResults.length > 0 
-        ? presentResults.reduce((sum, r) => sum + Number(r.percentage), 0) / presentResults.length 
+      const averagePercentage = presentResults.length > 0
+        ? presentResults.reduce((sum, r) => sum + Number(r.percentage), 0) / presentResults.length
         : 0;
 
       // Grade distribution
@@ -291,13 +289,13 @@ export class ReportController {
   static async getAttendanceReport(req: Request, res: Response) {
     try {
       const { classId, dateFrom, dateTo, studentId } = req.query;
-      
+
       const whereClause: any = {};
-      
+
       if (classId) {
         whereClause.currentClass = classId;
       }
-      
+
       if (dateFrom || dateTo) {
         whereClause.date = {};
         if (dateFrom) whereClause.date[Op.gte] = dateFrom;
@@ -340,7 +338,7 @@ export class ReportController {
             late: 0
           };
         }
-        
+
         dailySummary[date].total++;
         if (record.status === 'present') dailySummary[date].present++;
         else if (record.status === 'absent') dailySummary[date].absent++;
@@ -368,9 +366,9 @@ export class ReportController {
   static async getFinancialReport(req: Request, res: Response) {
     try {
       const { dateFrom, dateTo, feeType } = req.query;
-      
+
       const whereClause: any = {};
-      
+
       if (dateFrom || dateTo) {
         whereClause.paymentDate = {};
         if (dateFrom) whereClause.paymentDate[Op.gte] = dateFrom;
@@ -392,29 +390,29 @@ export class ReportController {
           {
             model: Fee,
             as: 'fee',
-            attributes: ['id', 'name', 'feeType', 'amount']
+            attributes: ['id', 'name', 'amount']
           }
         ],
         order: [['paymentDate', 'DESC']]
       });
 
       // Calculate financial statistics
-      const totalCollection = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const totalCollection = payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
       const totalPayments = payments.length;
-      const pendingPayments = payments.filter(p => p.status === 'pending').length;
-      const completedPayments = payments.filter(p => p.status === 'completed').length;
+      const pendingPayments = 0; // Status field missing in model
+      const completedPayments = payments.length; // Assuming all payments are completed
 
       // Fee type breakdown
       const feeTypeBreakdown: any = {};
       payments.forEach(payment => {
-        const feeType = payment.fee?.feeType || 'Unknown';
+        const feeType = payment.fee?.name || 'Unknown'; // Using name as feeType
         if (!feeTypeBreakdown[feeType]) {
           feeTypeBreakdown[feeType] = {
             totalAmount: 0,
             count: 0
           };
         }
-        feeTypeBreakdown[feeType].totalAmount += Number(payment.amount);
+        feeTypeBreakdown[feeType].totalAmount += Number(payment.amountPaid);
         feeTypeBreakdown[feeType].count++;
       });
 
@@ -425,7 +423,7 @@ export class ReportController {
         if (!monthlyCollection[month]) {
           monthlyCollection[month] = 0;
         }
-        monthlyCollection[month] += Number(payment.amount);
+        monthlyCollection[month] += Number(payment.amountPaid);
       });
 
       res.json({
@@ -445,4 +443,4 @@ export class ReportController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
-} 
+}

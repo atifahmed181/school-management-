@@ -54,7 +54,7 @@ const AccountsModule: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<FeeRecord | null>(null);
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
-  const { showNotification } = useNotification();
+  const { success, error } = useNotification();
 
   // Mock data - replace with actual API calls
   const feeRecords: FeeRecord[] = [
@@ -156,7 +156,7 @@ const AccountsModule: React.FC = () => {
   };
 
   const filteredFeeRecords = feeRecords.filter(record => {
-    const matchesSearch = 
+    const matchesSearch =
       record.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.feeType.toLowerCase().includes(searchTerm.toLowerCase());
@@ -166,7 +166,7 @@ const AccountsModule: React.FC = () => {
   });
 
   const filteredPaymentRecords = paymentRecords.filter(record => {
-    const matchesSearch = 
+    const matchesSearch =
       record.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -174,7 +174,7 @@ const AccountsModule: React.FC = () => {
   });
 
   const filteredExpenseRecords = expenseRecords.filter(record => {
-    const matchesSearch = 
+    const matchesSearch =
       record.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -220,12 +220,12 @@ const AccountsModule: React.FC = () => {
     try {
       // API call to record payment
       await feeAPI.recordPayment(selectedRecord!.id, paymentData);
-      showNotification('Payment recorded successfully', 'success');
+      success('Success', 'Payment recorded successfully');
       setShowPaymentModal(false);
       setSelectedRecord(null);
       // Refresh data
     } catch (error: any) {
-      showNotification('Failed to record payment', 'error');
+      error('Error', 'Failed to record payment');
     }
   };
 
@@ -290,7 +290,7 @@ const AccountsModule: React.FC = () => {
         <div className="card-header p-0">
           <ul className="nav nav-tabs card-header-tabs">
             <li className="nav-item">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'fees' ? 'active' : ''}`}
                 onClick={() => setActiveTab('fees')}
               >
@@ -299,7 +299,7 @@ const AccountsModule: React.FC = () => {
               </button>
             </li>
             <li className="nav-item">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'payments' ? 'active' : ''}`}
                 onClick={() => setActiveTab('payments')}
               >
@@ -308,7 +308,7 @@ const AccountsModule: React.FC = () => {
               </button>
             </li>
             <li className="nav-item">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'expenses' ? 'active' : ''}`}
                 onClick={() => setActiveTab('expenses')}
               >
@@ -317,7 +317,7 @@ const AccountsModule: React.FC = () => {
               </button>
             </li>
             <li className="nav-item">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'reports' ? 'active' : ''}`}
                 onClick={() => setActiveTab('reports')}
               >
@@ -347,7 +347,7 @@ const AccountsModule: React.FC = () => {
             {activeTab === 'fees' && (
               <>
                 <div className="col-md-3">
-                  <select 
+                  <select
                     className="form-select"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -359,7 +359,7 @@ const AccountsModule: React.FC = () => {
                   </select>
                 </div>
                 <div className="col-md-3">
-                  <select 
+                  <select
                     className="form-select"
                     value={filterClass}
                     onChange={(e) => setFilterClass(e.target.value)}
@@ -375,7 +375,7 @@ const AccountsModule: React.FC = () => {
               </>
             )}
             <div className="col-md-2">
-              <select 
+              <select
                 className="form-select"
                 value={filterPeriod}
                 onChange={(e) => setFilterPeriod(e.target.value)}
@@ -426,7 +426,7 @@ const AccountsModule: React.FC = () => {
                         <td className="text-end">
                           <div className="d-flex gap-2 justify-content-end">
                             {record.status !== 'paid' && (
-                              <button 
+                              <button
                                 className="btn btn-success btn-sm"
                                 onClick={() => handleRecordPayment(record)}
                               >
@@ -622,9 +622,9 @@ const AccountsModule: React.FC = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Record Payment - {selectedRecord.studentName}</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
+                <button
+                  type="button"
+                  className="btn-close"
                   onClick={() => setShowPaymentModal(false)}
                 ></button>
               </div>
@@ -640,12 +640,12 @@ const AccountsModule: React.FC = () => {
                 }}>
                   <div className="mb-3">
                     <label className="form-label">Amount</label>
-                    <input 
-                      type="number" 
-                      className="form-control" 
-                      name="amount" 
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="amount"
                       defaultValue={selectedRecord.amount}
-                      required 
+                      required
                     />
                   </div>
                   <div className="mb-3">

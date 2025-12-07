@@ -23,8 +23,8 @@ export class Student extends Model<Student> {
   @Column({ type: DataType.DATEONLY, allowNull: false })
   dateOfBirth!: Date;
 
-  @Column({ type: DataType.ENUM('male', 'female', 'other'), allowNull: false })
-  gender!: string;
+  @Column({ type: DataType.ENUM('male', 'female', 'other'), allowNull: true, defaultValue: 'male' })
+  gender?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   bloodGroup?: string;
@@ -39,8 +39,8 @@ export class Student extends Model<Student> {
   @Column({ type: DataType.STRING, allowNull: true })
   section?: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  rollNumber?: number;
+  @Column({ type: DataType.STRING, allowNull: true })
+  rollNumber?: string;
 
   @Column({ type: DataType.DATEONLY, allowNull: false })
   admissionDate!: Date;
@@ -48,21 +48,24 @@ export class Student extends Model<Student> {
   @Column({ type: DataType.STRING, allowNull: true })
   previousSchool?: string;
 
+  @Column({ type: DataType.STRING, allowNull: true })
+  admissionClass?: string;
+
   // Contact Information
-  @Column({ type: DataType.STRING, allowNull: false })
-  address!: string;
+  @Column({ type: DataType.STRING, allowNull: true, defaultValue: 'N/A' })
+  address?: string;
 
-  @Column({ type: DataType.STRING, allowNull: false })
-  city!: string;
+  @Column({ type: DataType.STRING, allowNull: true, defaultValue: 'N/A' })
+  city?: string;
 
-  @Column({ type: DataType.STRING, allowNull: false })
-  state!: string;
+  @Column({ type: DataType.STRING, allowNull: true, defaultValue: 'N/A' })
+  state?: string;
 
-  @Column({ type: DataType.STRING, allowNull: false })
-  postalCode!: string;
+  @Column({ type: DataType.STRING, allowNull: true, defaultValue: 'N/A' })
+  postalCode?: string;
 
-  @Column({ type: DataType.STRING, allowNull: false })
-  phoneNumber!: string;
+  @Column({ type: DataType.STRING, allowNull: true })
+  phoneNumber?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   alternatePhone?: string;
@@ -71,18 +74,24 @@ export class Student extends Model<Student> {
   email!: string;
 
   // Emergency Contact
-  @Column({ type: DataType.STRING, allowNull: false })
-  emergencyContactName!: string;
+  @Column({ type: DataType.STRING, allowNull: true })
+  emergencyContactName?: string;
 
-  @Column({ type: DataType.STRING, allowNull: false })
-  emergencyContactPhone!: string;
+  @Column({ type: DataType.STRING, allowNull: true })
+  emergencyContactPhone?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   emergencyContactRelation?: string;
 
   // Parent/Guardian Information
-  @Column({ type: DataType.STRING, allowNull: false })
-  fatherName!: string;
+  @Column({ type: DataType.STRING, allowNull: true })
+  fatherName?: string;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  fatherCnic?: string;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  fatherCell?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   fatherOccupation?: string;
@@ -90,14 +99,23 @@ export class Student extends Model<Student> {
   @Column({ type: DataType.STRING, allowNull: true })
   fatherPhone?: string;
 
-  @Column({ type: DataType.STRING, allowNull: false })
-  motherName!: string;
+  @Column({ type: DataType.STRING, allowNull: true })
+  motherName?: string;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  motherCnic?: string;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  motherCell?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   motherOccupation?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   motherPhone?: string;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  childNumber?: string;
 
   // Academic Status
   @Column({ type: DataType.ENUM('active', 'inactive', 'transferred', 'graduated', 'suspended'), defaultValue: 'active' })
